@@ -890,7 +890,7 @@ function update(dt) {
   }
   for (let i = FX.length - 1; i >= 0; i--) { FX[i].t += dt; if (FX[i].t >= FX[i].dur) FX.splice(i, 1); }
   // kill feed
-  for (const e of ents.values()) { if (e.kbSeen === null) { e.kbSeen = Object.assign({}, e.kb); continue; } for (const id in e.kb) { const v = num(e.kb[id], 0); if (v > (e.kbSeen[id] || 0)) { e.kbSeen[id] = v; feed(ents.get(id) ? ents.get(id).name : 'Someone', e.name); } } }
+  for (const e of ents.values()) { if (e.kbSeen === null) { e.kbSeen = Object.assign({}, e.kb); continue; } for (const id in e.kb) { const v = num(e.kb[id], 0); if (v > (e.kbSeen[id] || 0)) { e.kbSeen[id] = v; feed(id === 'trap' ? 'Spikes' : ents.get(id) ? ents.get(id).name : 'Someone', e.name); } } }
   if (me) { cam.x += (me.x - cam.x) * Math.min(1, dt * 9); cam.y += (me.y - cam.y) * Math.min(1, dt * 9); }
 }
 function fxStep(dt) {
@@ -902,7 +902,8 @@ function fxStep(dt) {
 
 /* ================= quest: twenty rooms in one connected world ================= */
 const QN = 20, RW = 17, RH = 13, GAP = 4, QCOLS = 5;
-const QW = { rooms: [], gates: [], roomOf: null };
+const QW = { rooms: [], gates: [], roomOf: null, traps: [] };
+const TRAP = { period: 3, warn: 1.55, up: 2.2 };
 const QS = { check: 0, t: 0, deaths: 0, done: false, ban: null, boss: null };
 const BOSS = [
   { name: 'Grave Brute', key: 'ghoul', hp: 900, sc: 1.9, pats: ['slam', 'charge', 'ring', 'charge'] },
@@ -956,6 +957,18 @@ function buildQuest(seed) {
   }
   setMap(g.map(r => r.join('')));
   QW.roomOf = new Int8Array(MW * MH).fill(-1);
+  // spike traps: strips of floor plates that fire in a ripple
+  QW.traps = []; const used = new Set();
+  for (const R of QW.rooms) {
+    const n = R.i === 0 ? 1 : Math.min(6, 1 + Math.floor(R.i / 3) + ((R.i + 1) % 5 === 0 ? 1 : 0)), ec = tileOf(R.ex), er = tileOf(R.ey);
+    for (let j = 0, tries = 0; j < n && tries < 80; tries++) {
+      const horiz = rnd() < .5, len = 2 + Math.floor(rnd() * 3), c0 = R.c0 + 1 + Math.floor(rnd() * (R.c1 - R.c0 - 1)), r0 = R.r0 + 1 + Math.floor(rnd() * (R.r1 - R.r0 - 1)), cells = [];
+      for (let k = 0; k < len; k++) { const c = c0 + (horiz ? k : 0), r = r0 + (horiz ? 0 : k); if (c > R.c1 || r > R.r1 || GRID[c + r * MW] !== 0 || used.has(c + r * MW) || Math.abs(c - ec) + Math.abs(r - er) < 4) { cells.length = 0; break; } cells.push([c, r]); }
+      if (!cells.length) continue; const ph = rnd() * TRAP.period;
+      cells.forEach(([c, r], k) => { used.add(c + r * MW); QW.traps.push({ c, r, x: c * T, y: r * T, room: R.i, ph: ph + k * .22, hit: new Map(), dmg: Math.round(16 + R.i * .8) }); });
+      j++;
+    }
+  }
   for (const R of QW.rooms) for (let r = R.r0; r <= R.r1; r++) for (let c = R.c0; c <= R.c1; c++) QW.roomOf[c + r * MW] = R.i;
   const gateAt = new Map(); QW.gates.forEach((gt, i) => { for (const [c, r] of gt) gateAt.set(c + r * MW, i); });
   for (const p of PROPS) if (p.gate) p.g = gateAt.get(p.c + p.r * MW);
@@ -973,6 +986,28 @@ function drawGate(p) {
   ctx.fillStyle = '#5d5c6c'; ctx.fillRect(x, y - Hh + 8, T, 5); ctx.fillRect(x, y - Hh + T - 16, T, 5);
   ctx.fillStyle = '#ff7b39'; ctx.fillRect(x, y - Hh, T, 2);
 }
+function trapState(t) { const k = ((QS.t + t.ph) % TRAP.period + TRAP.period) % TRAP.period; return k < TRAP.warn ? 0 : k < TRAP.up ? 1 : 2; }
+function trapStep() {
+  const me = myEnt(); if (!me) return; const ri = QW.roomOf[tileOf(me.x) + tileOf(me.y) * MW];
+  for (const t of QW.traps) {
+    if (Math.abs(t.room - ri) > 1 || trapState(t) !== 2) continue; const cyc = Math.floor((QS.t + t.ph) / TRAP.period);
+    for (const e of ents.values()) { if (!e.alive || e.boss || e.jz > 0 || tileOf(e.x) !== t.c || tileOf(e.y) !== t.r || t.hit.get(e.id) === cyc) continue;
+      t.hit.set(e.id, cyc); hurt(e, t.dmg, 'trap', rand(-1, 1), -1, 160); shards(e.x, e.y - 6, ['#c9ccd6', '#ff5d3d'], 5, 160); sfx('hit', e.x, e.y); }
+  }
+}
+function drawTraps(x0, y0, x1, y1) {
+  for (const t of QW.traps) {
+    if (t.x > x1 || t.x + T < x0 || t.y > y1 || t.y + T < y0) continue;
+    const st = trapState(t), x = t.x + 4, y = t.y + 4, w = T - 8;
+    ctx.fillStyle = '#07060c'; ctx.fillRect(x - 1.5, y - 1.5, w + 3, w + 3); ctx.fillStyle = '#3a3b48'; ctx.fillRect(x, y, w, w); ctx.fillStyle = '#4b4d5c'; ctx.fillRect(x, y, w, 3);
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
+      const cx = x + w * (i + .5) / 3, cy = y + w * (j + .5) / 3;
+      ctx.fillStyle = st === 1 ? 'rgba(255,80,50,' + (.55 + Math.sin(NOW * 22) * .3) + ')' : '#15141b'; ctx.beginPath(); ctx.arc(cx, cy, 3.6, 0, TAU); ctx.fill();
+      if (st === 1) P(ctx, '#aeb2c0', [cx - 2.5, cy, cx, cy - 6, cx + 2.5, cy]);
+      else if (st === 2) { P(ctx, '#07060c', [cx - 5, cy + 1, cx, cy - 19, cx + 5, cy + 1]); P(ctx, '#d6d9e3', [cx - 3.5, cy, cx, cy - 16, cx + 3.5, cy]); P(ctx, '#8d91a0', [cx, cy - 16, cx + 3.5, cy, cx, cy]); }
+    }
+  }
+}
 function drawVoid(x0, y0, x1, y1) {
   ctx.fillStyle = '#08070d';
   const c0 = Math.max(0, tileOf(x0)), c1 = Math.min(MW - 1, tileOf(x1)), r0 = Math.max(0, tileOf(y0)), r1 = Math.min(MH - 1, tileOf(y1));
@@ -985,7 +1020,7 @@ async function startQuest() {
   ents.clear(); roster = []; Net.id = 'me'; Net.jt = 1; iAmHost = true; hostId = 'me'; prof.team = 0;
   Object.assign(cfg, { cv: 1, ph: 1, mid: 1, mode: 1, bots: 0, goal: 0, quest: 1 }); myMid = 1; match.left = DUR; match.t = 0;
   buildQuest((Math.random() * 1e9) | 0); QID = 0; B = []; GR = []; NV = []; FX = []; Q = []; TX = []; SW = []; PT.length = 0; GP.length = 0;
-  Object.assign(QS, { check: 0, t: 0, deaths: 0, done: false, ban: null, boss: null });
+  for (const t of QW.traps) t.hit.clear(); Object.assign(QS, { check: 0, t: 0, deaths: 0, done: false, ban: null, boss: null });
   const me = newEnt('me', true); me.name = prof.name; me.hero = prof.hero; me.team = 0; me.first = true; ents.set('me', me); respawn(me);
   cam.x = me.x; cam.y = me.y; $('feed').textContent = ''; app.screen = 'play'; app.menu = false; show(null); hudOn(true); sfx('go');
   $('goal').textContent = 'Quest'; banner('Level 1', 'Clear each room to open the gate');
@@ -1072,6 +1107,7 @@ function questFlow(dt) {
   QS.t += dt; if (QS.ban) { QS.ban.t -= dt; if (QS.ban.t <= 0) QS.ban = null; }
   for (const e of [...ents.values()]) if (e.q && !e.alive) { ents.delete(e.id); if (e === QS.boss) QS.boss = null; }
   const me = myEnt(); if (!me) return;
+  trapStep();
   const ri = me.alive ? QW.roomOf[tileOf(me.x) + tileOf(me.y) * MW] : -1;
   if (ri >= 0 && QW.rooms[ri].state === 0) { const R = QW.rooms[ri]; R.state = 1; QS.check = Math.max(QS.check, ri); spawnRoom(R); }
   for (const R of QW.rooms) {
@@ -1241,7 +1277,7 @@ function render(dt) {
   ctx.setTransform(DPR * zoom, 0, 0, DPR * zoom, DPR * (W / 2 - cam.x * zoom + shx), DPR * (H / 2 - cam.y * zoom + shy));
   const x0 = cam.x - W / zoom / 2 - 10, y0 = cam.y - H / zoom / 2 - 10, x1 = x0 + W / zoom + 20, y1 = y0 + H / zoom + 20;
   drawGround(x0, y0, x1, y1);
-  if (cfg.quest) drawVoid(x0, y0, x1, y1);
+  if (cfg.quest) { drawVoid(x0, y0, x1, y1); drawTraps(x0, y0, x1, y1); }
   order.length = 0;
   for (const p of PROPS) if (p.x < x1 && p.x + T > x0 && p.y + T + 4 > y0 && p.y - 30 < y1) order.push(p);
   if (play) {
