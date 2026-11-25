@@ -546,17 +546,17 @@ function moveEnt(e, dx, dy) { const n = Math.max(1, Math.ceil(Math.hypot(dx, dy)
 /* ================= fighters ================= */
 const HK = ['vesper', 'ilwen', 'bram', 'wren', 'tundra', 'tatter'];
 const HERO = {
-  vesper: { name: 'Vesper', role: 'Gunslinger', hp: 100, speed: 215, reload: 1.3, cd: .42, atk: 'v', range: 225, psp: 840, sup: 'g', srange: 360, need: 110, gw: .08, sg: { t: 'lob', R: 115 }, pips: [3, 4, 4],
+  vesper: { name: 'Vesper', role: 'Gunslinger', hp: 100, speed: 215, reload: 1.3, cd: .42, atk: 'v', range: 215, psp: 840, sup: 'g', srange: 360, need: 110, gw: .045, sg: { t: 'lob', R: 115 }, pips: [3, 4, 4],
     info: ['Fires a tight burst of four rounds.', 'Soul Grenade: lobs a blast over walls.'] },
-  ilwen: { name: 'Ilwen', role: 'Moon oracle', hp: 90, speed: 205, reload: 1.3, cd: .45, atk: 'i', range: 290, psp: 660, sup: 'n', srange: 170, need: 100, gw: .2, sg: { t: 'self', R: 190 }, pips: [3, 5, 5],
+  ilwen: { name: 'Ilwen', role: 'Moon oracle', hp: 90, speed: 205, reload: 1.3, cd: .45, atk: 'i', range: 275, psp: 660, sup: 'n', srange: 170, need: 100, gw: .12, sg: { t: 'self', R: 190 }, pips: [3, 5, 5],
     info: ['One heavy, fast bolt that passes through fighters.', 'Moonfall: a ring that hurls and slows everyone close.'] },
-  bram: { name: 'Bram', role: 'Gravedigger', hp: 140, speed: 198, reload: 1.5, cd: .55, atk: 'b', range: 160, psp: 700, sup: 'B', srange: 300, need: 120, gw: .3, sg: { t: 'wedge', R: 310, w: .4 }, pips: [5, 2, 3],
+  bram: { name: 'Bram', role: 'Gravedigger', hp: 140, speed: 198, reload: 1.5, cd: .55, atk: 'b', range: 130, psp: 700, sup: 'B', srange: 300, need: 120, gw: .3, sg: { t: 'wedge', R: 310, w: .4 }, pips: [5, 2, 3],
     info: ['A short-range spread that hits hardest up close.', 'Last Rites: a wide blast that throws fighters back.'] },
-  wren: { name: 'Wren', role: 'Cat rogue', hp: 100, speed: 225, reload: 1.1, cd: .42, atk: 'k', range: 120, psp: 9999, sup: 'W', srange: 440, need: 100, gw: 1.25, sg: { t: 'wedge', R: 450, w: .3 }, pips: [3, 2, 4],
+  wren: { name: 'Wren', role: 'Cat rogue', hp: 100, speed: 225, reload: 1.1, cd: .42, atk: 'k', range: 100, psp: 9999, sup: 'W', srange: 440, need: 100, gw: 1.25, sg: { t: 'wedge', R: 450, w: .3 }, pips: [3, 2, 4],
     info: ['A wide dagger swing that cuts everyone in a broad arc, at short range.', 'Fan of Knives: five blades in a fan that pass through fighters.'] },
-  tundra: { name: 'Tundra', role: 'Frost mage', hp: 100, speed: 200, reload: 1.3, cd: .5, atk: 't', range: 250, psp: 560, sup: 'T', srange: 340, need: 110, gw: .22, sg: { t: 'lob', R: 130 }, pips: [3, 4, 3],
+  tundra: { name: 'Tundra', role: 'Frost mage', hp: 100, speed: 200, reload: 1.3, cd: .5, atk: 't', range: 240, psp: 560, sup: 'T', srange: 340, need: 110, gw: .13, sg: { t: 'lob', R: 130 }, pips: [3, 4, 3],
     info: ['An ice ball that slows, with a 12% chance to freeze the target solid (bosses resist).', 'Whiteout: lobs a freezing blast over walls.'] },
-  tatter: { name: 'Tatter', role: 'Pirate otter', hp: 120, speed: 212, reload: .6, cd: .2, atk: 'o', range: 215, psp: 900, sup: 'S', srange: 370, need: 90, gw: .1, sg: { t: 'wedge', R: 380, w: .05 }, pips: [4, 3, 2],
+  tatter: { name: 'Tatter', role: 'Pirate otter', hp: 120, speed: 212, reload: .6, cd: .2, atk: 'o', range: 205, psp: 900, sup: 'S', srange: 370, need: 90, gw: .05, sg: { t: 'wedge', R: 380, w: .05 }, pips: [4, 3, 2],
     info: ['Rapid fire: quick three-shot bursts that hit lightly but never stop coming.', 'Reel In: a hook that drags a fighter to you.'] },
   ghoul: { name: 'Ghoul', role: 'Pawn', hp: 70, speed: 185, reload: 1.2, cd: .9, atk: 'c', range: 95, psp: 9999, need: 1e9, pips: [0, 0, 0], info: ['', ''] },
   dog: { name: 'Beta Tester', role: 'Boss', hp: 2600, speed: 150, reload: 1, cd: .8, atk: 'c', range: 120, psp: 9999, need: 1e9, pips: [0, 0, 0], info: ['', ''] },
