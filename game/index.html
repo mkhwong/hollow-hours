@@ -122,7 +122,7 @@ p{margin:0;line-height:1.4}
 <section class="screen" id="home">
   <div class="col">
     <h1>Hollow <em>Hours</em></h1>
-    <p class="lede">A night-time arena brawl with six fighters. Open a room and pass the code around, or take the 20-level quest alone.</p>
+    <p class="lede">A night-time arena brawl with six fighters. Open a room and pass the code around to brawl or to take the 20-level quest as a team, or run the quest alone.</p>
     <div class="field"><input id="nameIn" type="text" maxlength="14" autocomplete="off" spellcheck="false" placeholder="Your name" aria-label="Your name"></div>
     <div class="heroes" id="heroes"></div>
     <div id="heroInfo"></div>
@@ -150,6 +150,7 @@ p{margin:0;line-height:1.4}
         <div class="seg" id="modeSeg"><button type="button" data-m="0">Free-for-all</button><button type="button" data-m="1">Teams</button></div>
         <div class="step"><button type="button" id="botMinus" aria-label="Fewer bots">−</button><span id="botCount">Bots: 2</span><button type="button" id="botPlus" aria-label="More bots">+</button></div>
         <button class="cta" id="startBtn" type="button">Start match</button>
+        <button class="cta quest" id="questRoomBtn" type="button">Start team quest · 20 levels</button>
       </div>
     </div>
     <p class="note" id="lobbyNote"></p>
@@ -645,7 +646,7 @@ function setCfg(p) { Object.assign(cfg, p); cfg.cv++; }
 
 function applyState(e, s, sh, kb, valid) {
   if (Array.isArray(s)) {
-    const x = clamp(num(s[0], e.tx), 0, MW * T), y = clamp(num(s[1], e.ty), 0, MH * T), fl = s[3] | 0, alive = !!(fl & 1), hp = clamp(num(s[2], 0), 0, 999);
+    const x = clamp(num(s[0], e.tx), 0, MW * T), y = clamp(num(s[1], e.ty), 0, MH * T), fl = s[3] | 0, alive = !!(fl & 1), hp = clamp(num(s[2], 0), 0, 9999);
     if (e.first || (!e.alive && alive) || Math.hypot(x - e.x, y - e.y) > 260) { e.x = x; e.y = y; }
     e.tx = x; e.ty = y;
     if (!e.first && alive && e.alive && hp < e.hp - .5) { e.flash = .1; text(e, e.hp - hp); }
@@ -665,7 +666,7 @@ function syncNet() {
     if (p.isMe && p.sameTab) { Net.id = p.peer; continue; }
     const pr = p.presence; if (!pr || typeof pr.n !== 'string') continue;
     const jt = num(pr.jt, 0); if (jt > maxJt) maxJt = jt;
-    roster.push({ id: p.peer, name: clean(pr.n) || 'Someone', hero: HK[pr.h] || 'vesper', team: pr.tm ? 1 : 0, jt, pr });
+    roster.push({ id: p.peer, name: clean(pr.n) || 'Someone', hero: HK[pr.h] || 'vesper', team: cfg.quest ? 0 : pr.tm ? 1 : 0, jt, pr });
   }
   if (!Net.id) return;
   if (Net.jt === 0 && performance.now() - Net.joinT > 1300) { Net.jt = Math.max(Date.now(), maxJt + 1); if (cfg.cv === 0) cfg.cv = 1; }
@@ -674,13 +675,17 @@ function syncNet() {
   for (const p of roster) if (p.jt > 0 && (p.jt < hjt || (p.jt === hjt && p.id < hid))) { hid = p.id; hjt = p.jt; }
   hostId = hid; iAmHost = hid === Net.id;
   // rules: highest version wins
-  for (const p of roster) { const c = p.pr.cfg; if (!c || typeof c !== 'object') continue; const v = num(c.cv, 0); if (v > cfg.cv || (v === cfg.cv && p.id === hostId && !iAmHost)) { cfg.cv = v; cfg.ph = clamp(c.ph | 0, 0, 2); cfg.mid = c.mid | 0; cfg.mode = c.mode ? 1 : 0; cfg.bots = clamp(c.bots | 0, 0, 4); cfg.goal = clamp(c.goal | 0, 1, 99); } }
+  for (const p of roster) { const c = p.pr.cfg; if (!c || typeof c !== 'object') continue; const v = num(c.cv, 0); if (v > cfg.cv || (v === cfg.cv && p.id === hostId && !iAmHost)) { cfg.cv = v; cfg.ph = clamp(c.ph | 0, 0, 2); cfg.mid = c.mid | 0; cfg.mode = c.mode ? 1 : 0; cfg.bots = clamp(c.bots | 0, 0, 4); cfg.goal = clamp(c.goal | 0, 1, 99); cfg.quest = c.quest ? 1 : 0; cfg.qseed = c.qseed | 0; } }
   for (const p of roster) {
     const pr = p.pr;
     if (p.id === hostId && !iAmHost) { const tl = num(pr.tl, null); if (tl !== null && tl !== match.tl) { match.tl = tl; match.left = tl; } }
     if (cfg.ph !== 1) continue;
     const valid = pr.m === cfg.mid;
     if (Array.isArray(pr.s)) applyState(upsert(p.id, p.name, p.hero, p.team, false), pr.s, pr.sh, pr.kb, valid);
+    if (cfg.quest && p.id === hostId && !iAmHost && myMid === cfg.mid && valid) {
+      if (Array.isArray(pr.qs)) applyQS(pr.qs);
+      if (Array.isArray(pr.qf)) for (const f of pr.qf.slice(0, 30)) { if (!Array.isArray(f) || !QK[f[1]]) continue; const e = upsert('q' + (f[0] | 0), '', QK[f[1]], 1, true); e.mine = false; foeInit(e, QK[f[1]], clamp(f[2] | 0, 0, QN - 1), clamp(f[3] | 0, 0, 4)); applyState(e, f[4], f[5], null, true); }
+    }
     if (p.id === hostId && !iAmHost && Array.isArray(pr.bots)) for (const b of pr.bots.slice(0, 4)) {
       if (!b || typeof b.i !== 'string' || !/^b[1-4]$/.test(b.i)) continue;
       const e = upsert(b.i, clean(b.n) || 'Bot', HK[b.h] || 'vesper', b.tm ? 1 : 0, true); if (e.mine) { e.mine = false; }
@@ -693,9 +698,10 @@ function publish() {
   if (!Net.nr) return;
   const me = myEnt(), play = cfg.ph === 1 && myMid === cfg.mid;
   const pack = e => ({ s: [Math.round(e.x), Math.round(e.y), Math.ceil(e.hp), (e.alive ? 1 : 0) | (e.rv > 0 ? 2 : 0) | (e.inv > 0 ? 4 : 0) | (e.slow > 0 ? 8 : 0) | (e.frz > 0 ? 16 : 0), Math.round(e.sup * 100)], sh: e.sh.map(o => o.ev), kb: e.kb });
-  const o = { n: prof.name, h: HK.indexOf(prof.hero), tm: prof.team, jt: Net.jt, m: myMid, cfg: { cv: cfg.cv, ph: cfg.ph, mid: cfg.mid, mode: cfg.mode, bots: cfg.bots, goal: cfg.goal }, s: null, sh: null, kb: null, tl: iAmHost ? Math.max(0, Math.round(match.left)) : null, bots: null };
+  const o = { n: prof.name, h: HK.indexOf(prof.hero), tm: prof.team, jt: Net.jt, m: myMid, cfg: { cv: cfg.cv, ph: cfg.ph, mid: cfg.mid, mode: cfg.mode, bots: cfg.bots, goal: cfg.goal, quest: cfg.quest, qseed: cfg.qseed | 0 }, s: null, sh: null, kb: null, tl: iAmHost ? Math.max(0, Math.round(match.left)) : null, bots: null };
   if (me && play) Object.assign(o, pack(me));
-  if (iAmHost && play) o.bots = [...ents.values()].filter(e => e.isBot && e.mine).map(e => Object.assign({ i: e.id, n: e.name, h: HK.indexOf(e.hero), tm: e.team }, pack(e)));
+  if (iAmHost && play && cfg.quest) { o.qs = [QS.act, QS.cl, Math.round(QS.t * 10), Math.round(QS.hpx * 10)]; o.qf = [...ents.values()].filter(e => e.q && e.mine).map(e => [+e.id.slice(1), QK.indexOf(e.hero), e.room, e.boss || 0, pack(e).s, e.sh.map(x => x.ev)]); }
+  else if (iAmHost && play) o.bots = [...ents.values()].filter(e => e.isBot && e.mine).map(e => Object.assign({ i: e.id, n: e.name, h: HK.indexOf(e.hero), tm: e.team }, pack(e)));
   Net.send(o);
 }
 
@@ -724,6 +730,7 @@ function ensureBots() {
   for (let i = 0; i < 4; i++) { const id = 'b' + (i + 1), e = ents.get(id); if (i < cfg.bots) { if (!e) makeBot(i); else if (!e.mine) { e.mine = true; e.kb = Object.assign({}, e.kb); e.sh = []; e.sid = e.lastShot + 1; } } else if (e) ents.delete(id); }
 }
 function beginMatch() {
+  if (ROWS !== ARENA) setMap(ARENA);
   myMid = cfg.mid; B = []; GR = []; NV = []; FX = []; Q = []; TX = []; SW = []; IC = []; match.t = 0; if (iAmHost) match.left = DUR;
   for (const e of [...ents.values()]) { if (e.isBot) ents.delete(e.id); else e.kbSeen = null; }
   let me = myEnt(); if (!me) { me = newEnt(Net.id, true); ents.set(Net.id, me); }
@@ -731,7 +738,7 @@ function beginMatch() {
   cam.x = me.x; cam.y = me.y; $('feed').textContent = ''; app.screen = 'play'; app.menu = false; show(null); hudOn(true); sfx('go');
   $('goal').textContent = (cfg.mode ? 'Team to ' : 'First to ') + cfg.goal;
 }
-function startMatch() { wakeAudio(); setCfg({ ph: 1, mid: (Math.random() * 1e9) | 0 || 1, goal: cfg.mode ? 12 : 8 }); match.left = DUR; }
+function startMatch() { wakeAudio(); setCfg({ ph: 1, mid: (Math.random() * 1e9) | 0 || 1, goal: cfg.mode ? 12 : 8, quest: 0 }); match.left = DUR; }
 function tally() {
   const k = new Map(); for (const e of ents.values()) for (const id in e.kb) k.set(id, (k.get(id) || 0) + num(e.kb[id], 0));
   const rows = []; for (const e of ents.values()) { let d = 0; for (const id in e.kb) d += num(e.kb[id], 0); rows.push({ id: e.id, name: e.name, team: e.team, bot: e.isBot, k: k.get(e.id) || 0, d }); }
@@ -741,14 +748,14 @@ function tally() {
 }
 function flow(dt) {
   if (app.screen === 'home') return;
-  if (cfg.quest) { questFlow(dt); return; }
+  if (cfg.ph === 1 && cfg.quest) { if (myMid !== cfg.mid) { if (Net.id && Net.jt > 0) beginQuest(); } else questFlow(dt); return; }
   if (iAmHost && cfg.ph === 1 && myMid === cfg.mid) {
     match.left -= dt; ensureBots();
     if (match.t > 2 && (match.left <= 0 || tally().top >= cfg.goal)) setCfg({ ph: 2 });
   } else if (!iAmHost && cfg.ph === 1) match.left -= dt;
   if (cfg.ph === 1 && myMid !== cfg.mid && Net.id && (Net.jt > 0)) beginMatch();
   else if (cfg.ph === 2 && app.screen !== 'end') showEnd();
-  else if (cfg.ph === 0 && app.screen !== 'lobby') { ents.clear(); myMid = -1; app.screen = 'lobby'; app.menu = false; lobbySig = ''; show('lobby'); hudOn(false); }
+  else if (cfg.ph === 0 && app.screen !== 'lobby') { if (ROWS !== ARENA) setMap(ARENA); ents.clear(); myMid = -1; app.screen = 'lobby'; app.menu = false; lobbySig = ''; show('lobby'); hudOn(false); }
 }
 
 /* ================= combat ================= */
@@ -771,6 +778,7 @@ function spawnShot(e, ev) {
   else if (k === 'S') { bullet(id, team, x, y, a, { sp: 900, dmg: 20, r: 8, range: 380, kind: 4, knock: -1300, slow: 1 }); sfx('s', x, y); }
   else if (k === 'c') { if (e.boss) e.sw = 1; SW.push({ owner: id, team, x, y, a, t: 0, dur: .22, R: e.boss ? 150 : 85, half: .8, hit: new Set(), dmg: Math.round(13 * (e.pow || 1) * (e.boss ? 2 : 1)) }); sfx('s', x, y); }
   else if (k === 'e') { bullet(id, team, x, y, a, { sp: 380, dmg: Math.round(11 * (e.pow || 1)), r: 7, range: 420, kind: 6 }); sfx('i', x, y); }
+  else if ('RFMCLZK'.includes(k)) bossShot(e, k, x, y, a, ev);
   else if (k === 'I') { const c = { owner: id, team, x, y, t: 0, dur: 4, R: 88 }; IC.push(c); e.kick = .4;
     for (const o of ents.values()) { if (!o.mine || !o.alive || o.leap || !iceFoe(c, o.id, o.team)) continue; const dx = o.x - x, dy = o.y - y, d = Math.hypot(dx, dy) || 1, need = c.R + o.r + 3 - d; if (need > 0) { moveEnt(o, dx / d * need, dy / d * need); o.slow = Math.max(o.slow, 1); } }
     for (let i = 0; i < 12; i++) shards(x + Math.cos(i * TAU / 12) * c.R, y + Math.sin(i * TAU / 12) * c.R, ['#bfeaff', '#f4fbff', '#7fb0ff'], 3, 150); glowAt(GL.moon, x, y, c.R * 1.8, .4); sfx('t', x, y); sfx('nova', x, y); }
@@ -872,6 +880,8 @@ function update(dt) {
       const px = e.x, py = e.y, k = Math.min(1, dt * 14); e.x += (e.tx - e.x) * k; e.y += (e.ty - e.y) * k; e.vx = (e.x - px) / dt; e.vy = (e.y - py) / dt; e.rv -= dt;
     }
     e.moving = Math.hypot(e.vx, e.vy) > 25; if (e.moving) e.step += dt * 11; if (e.alive && HERO[e.hero].sec && Math.hypot(e.vx, e.vy) > 520) glowAt(GL.gold, e.x, e.y - 22, 20, .22); if (e.sw > 0) e.sw = Math.max(0, e.sw - dt * 1.7);
+    if (e.lv) { const L = e.lv; L.t += dt; const k = Math.min(1, L.t / L.dur); e.jz = Math.sin(k * Math.PI) * L.h; if (k > .58 && !L.sw) { L.sw = 1; e.sw = 1; } if (k >= 1) { e.lv = null; e.jz = 0; } }
+    if (e.dashT > 0) { e.dashT -= dt; if (me && me.alive && !e.dashHitMe && Math.hypot(me.x - e.x, me.y - e.y) < e.r + me.r + 14) { e.dashHitMe = true; hurt(me, 22 + (e.boss || 1) * 4, e.id, me.x - e.x, me.y - e.y, 520); } }
     e.aimT -= dt; e.flash -= dt; e.kick *= Math.pow(.0004, dt);
     if (e.aimT <= 0 && Math.abs(e.vx) > 30) e.face = e.vx > 0 ? 1 : -1;
   }
@@ -907,7 +917,7 @@ function update(dt) {
   for (let i = IC.length - 1; i >= 0; i--) { IC[i].t += dt; if (IC[i].t >= IC[i].dur) { const c = IC[i]; for (let j = 0; j < 12; j++) shards(c.x + Math.cos(j * TAU / 12) * c.R, c.y + Math.sin(j * TAU / 12) * c.R, ['#bfeaff', '#f4fbff'], 2, 120); IC.splice(i, 1); } }
   for (let i = FX.length - 1; i >= 0; i--) { FX[i].t += dt; if (FX[i].t >= FX[i].dur) FX.splice(i, 1); }
   // kill feed
-  for (const e of ents.values()) { if (e.kbSeen === null) { e.kbSeen = Object.assign({}, e.kb); continue; } for (const id in e.kb) { const v = num(e.kb[id], 0); if (v > (e.kbSeen[id] || 0)) { e.kbSeen[id] = v; feed(id === 'trap' ? 'Spikes' : ents.get(id) ? ents.get(id).name : 'Someone', e.name); } } }
+  for (const e of ents.values()) { if (e.q) continue; if (e.kbSeen === null) { e.kbSeen = Object.assign({}, e.kb); continue; } for (const id in e.kb) { const v = num(e.kb[id], 0); if (v > (e.kbSeen[id] || 0)) { e.kbSeen[id] = v; feed(id === 'trap' ? 'Spikes' : ents.get(id) ? ents.get(id).name : 'Someone', e.name); } } }
   if (me) { cam.x += (me.x - cam.x) * Math.min(1, dt * 9); cam.y += (me.y - cam.y) * Math.min(1, dt * 9); }
 }
 function fxStep(dt) {
@@ -921,7 +931,7 @@ function fxStep(dt) {
 const QN = 20, RW = 17, RH = 13, GAP = 4, QCOLS = 5;
 const QW = { rooms: [], gates: [], roomOf: null, traps: [] };
 const TRAP = { period: 3, warn: 1.55, up: 2.2 };
-const QS = { check: 0, t: 0, deaths: 0, done: false, ban: null, boss: null };
+const QS = { check: 0, act: -1, cl: 0, t: 0, deaths: 0, done: false, ban: null, boss: null, synced: false, hpx: 1 };
 const BOSS = [
   { name: 'Grave Brute', key: 'ghoul', hp: 900, sc: 1.9, pats: ['slam', 'charge', 'ring', 'charge'] },
   { name: 'Ember Matron', key: 'imp', hp: 1200, sc: 2, pats: ['fan', 'ring', 'summon', 'fan'] },
@@ -990,9 +1000,10 @@ function buildQuest(seed) {
   const gateAt = new Map(); QW.gates.forEach((gt, i) => { for (const [c, r] of gt) gateAt.set(c + r * MW, i); });
   for (const p of PROPS) if (p.gate) p.g = gateAt.get(p.c + p.r * MW);
 }
-function openGate(i) {
+function openGate(i, quiet) {
   for (const [c, r] of QW.gates[i]) GRID[c + r * MW] = 0;
   for (let k = PROPS.length - 1; k >= 0; k--) if (PROPS[k].gate && PROPS[k].g === i) PROPS.splice(k, 1);
+  if (quiet) return;
   const R = QW.rooms[i]; shards(R.gx, R.gy - 20, ['#ff7b39', '#3a3943', '#ffe2b0'], 18, 260); glowAt(GL.ember, R.gx, R.gy, 120, .6); sfx('boom', R.gx, R.gy);
 }
 function drawGate(p) {
@@ -1031,35 +1042,25 @@ function drawVoid(x0, y0, x1, y1) {
   for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) if (GRID[c + r * MW] === 3) ctx.fillRect(c * T - .5, r * T - .5, T + 1, T + 1);
 }
 function banner(text, sub) { QS.ban = { text, sub, t: 2.6 }; }
-async function startQuest() {
-  wakeAudio(); saveProf();
-  if (!await Net.join(null)) return;
-  ents.clear(); roster = []; Net.id = 'me'; Net.jt = 1; iAmHost = true; hostId = 'me'; prof.team = 0;
-  Object.assign(cfg, { cv: 1, ph: 1, mid: 1, mode: 1, bots: 0, goal: 0, quest: 1 }); myMid = 1; match.left = DUR; match.t = 0;
-  buildQuest((Math.random() * 1e9) | 0); QID = 0; B = []; GR = []; NV = []; FX = []; Q = []; TX = []; SW = []; IC = []; PT.length = 0; GP.length = 0;
-  for (const t of QW.traps) t.hit.clear(); Object.assign(QS, { check: 0, t: 0, deaths: 0, done: false, ban: null, boss: null });
-  const me = newEnt('me', true); me.name = prof.name; me.hero = prof.hero; me.team = 0; me.first = true; ents.set('me', me); respawn(me);
-  cam.x = me.x; cam.y = me.y; $('feed').textContent = ''; app.screen = 'play'; app.menu = false; show(null); hudOn(true); sfx('go');
-  $('goal').textContent = 'Quest'; banner('Level 1', 'Clear each room to open the gate');
-}
-function questRespawn(e) {
-  if (e.q) return;
-  const R = QW.rooms[QS.check], h = HERO[e.hero]; if (!e.first) QS.deaths++;
-  e.x = e.tx = R.ex; e.y = e.ty = R.ey; e.hp = h.hp; e.ammo = 3; e.alive = true; e.inv = 2; e.kx = e.ky = 0; e.slow = 0; e.frz = 0; e.scd = 0; e.cd = .3; e.first = false;
+const QK = ['ghoul', 'imp', 'dog'];
+function nearPlayer(e) { let b = null, bd = 1e12; for (const o of ents.values()) { if (o.q || o.isBot || !o.alive) continue; const d = (o.x - e.x) ** 2 + (o.y - e.y) ** 2; if (d < bd) { bd = d; b = o; } } return b; }
+function players() { let n = 0; for (const o of ents.values()) if (!o.isBot) n++; return Math.max(1, n); }
+function foeInit(e, key, room, boss) {
+  e.q = true; e.isBot = true; e.team = 1; e.hero = key; e.room = room; e.rb = QW.rooms[room]; e.pow = 1 + room * .07;
+  if (boss) { const b = BOSS[boss - 1]; e.boss = boss; e.sc = b.sc; e.r = 30; e.mhp = Math.round(b.hp * QS.hpx); e.name = b.name; e.spd = key === 'ghoul' ? 135 : key === 'dog' ? 150 : 115; QS.boss = e; }
+  else { e.mhp = Math.round(HERO[key].hp * e.pow * QS.hpx); e.name = HERO[key].name; }
 }
 function makeFoe(key, x, y, R, pow, boss) {
-  const id = 'q' + (++QID), e = newEnt(id, true), b = boss ? BOSS[boss - 1] : null;
-  if (b) key = b.key;
-  Object.assign(e, { isBot: true, q: true, team: 1, hero: key, name: b ? b.name : HERO[key].name, room: R.i, rb: R, pow, x, y, tx: x, ty: y, alive: true, inv: .7, cd: rand(.5, 1.3), ammo: 2 });
-  e.mhp = e.hp = Math.round(HERO[key].hp * pow);
-  if (b) { e.boss = boss; e.mhp = e.hp = b.hp; e.sc = b.sc; e.r = 30; e.bt = 2.2; e.pat = 0; e.spd = key === 'ghoul' ? 135 : key === 'dog' ? 150 : 115; QS.boss = e; }
-  ents.set(id, e); glowAt(GL.soul, x, y - 20, b ? 120 : 50, .7); shards(x, y - 20, ['#a98bff', '#3a3943'], 8, 160); return e;
+  const id = 'q' + (++QID), e = newEnt(id, true); if (boss) key = BOSS[boss - 1].key;
+  foeInit(e, key, R.i, boss || 0); Object.assign(e, { x, y, tx: x, ty: y, alive: true, inv: .7, cd: rand(.5, 1.3), ammo: 2, hp: e.mhp }); if (boss) { e.bt = 2.2; e.pat = 0; }
+  ents.set(id, e); glowAt(GL.soul, x, y - 20, boss ? 120 : 50, .7); shards(x, y - 20, ['#a98bff', '#3a3943'], 8, 160); return e;
 }
+function adoptFoe(e) { e.mine = true; e.kb = {}; e.sh = []; e.sid = e.lastShot + 1; e.cd = 1; e.ammo = 2; e.tx = e.x; e.ty = e.y; if (e.boss) { e.bt = 2; e.pat = 0; } QID = Math.max(QID, +e.id.slice(1) || 0); }
+function emit(e, kind, x, y, a, p5, p6) { const ev = [++e.sid, kind, Math.round(x), Math.round(y), Math.round(a * 100)]; if (p5 !== undefined) ev.push(Math.round(p5), Math.round(p6 || 0)); e.sh.push({ ev, t: NOW }); if (e.sh.length > 6) e.sh.shift(); spawnShot(e, ev); }
 function freeSpot(R, far) {
-  const me = myEnt();
   for (let t = 0; t < 60; t++) {
     const c = R.c0 + 1 + Math.floor(Math.random() * (R.c1 - R.c0 - 1)), r = R.r0 + 1 + Math.floor(Math.random() * (R.r1 - R.r0 - 1));
-    if (GRID[c + r * MW] !== 0) continue; const x = (c + .5) * T, y = (r + .5) * T;
+    if (GRID[c + r * MW] !== 0) continue; const x = (c + .5) * T, y = (r + .5) * T, me = nearPlayer({ x, y });
     if (me && Math.hypot(me.x - x, me.y - y) < far && t < 50) continue; return [x, y];
   }
   return [R.cx, R.cy];
@@ -1071,74 +1072,111 @@ function spawnRoom(R) {
   for (let i = 0; i < ng + ni; i++) { const p = freeSpot(R, 280); makeFoe(i < ng ? 'ghoul' : 'imp', p[0], p[1], R, pow); }
   if (n > 1) banner('Level ' + n, ng + ni + ' foes');
 }
-function foeStep(e, dt) { const me = myEnt(); if (!me || !me.alive) return [0, 0]; return botStep(e, dt); }
+function foeStep(e, dt) { return nearPlayer(e) ? botStep(e, dt) : [0, 0]; }
 function bossStep(e, dt) {
-  const me = myEnt(); if (!me || !me.alive) return [0, 0];
-  const dx = me.x - e.x, dy = me.y - e.y, d = Math.hypot(dx, dy) || 1, b = BOSS[e.boss - 1], enr = e.hp < e.mhp * .5, a = Math.atan2(dy, dx);
+  const tg = nearPlayer(e); if (!tg) return [0, 0];
+  const dx = tg.x - e.x, dy = tg.y - e.y, d = Math.hypot(dx, dy) || 1, b = BOSS[e.boss - 1], enr = e.hp < e.mhp * .5, a = Math.atan2(dy, dx);
   e.bt -= dt * (enr ? 1.45 : 1);
   if (e.leap) {
     const L = e.leap; L.t += dt; const k = Math.min(1, L.t / L.dur);
-    if (k > .58 && !L.sw) { L.sw = 1; e.sw = 1; } e.x = e.tx = L.sx + (L.tx - L.sx) * k; e.y = e.ty = L.sy + (L.ty - L.sy) * k; e.jz = Math.sin(k * Math.PI) * L.h; e.inv = .1; e.a = Math.atan2(L.ty - L.sy, L.tx - L.sx); e.aimT = .2;
-    if (k >= 1) { e.leap = null; e.jz = 0; e.inv = 0; smash(e, L.tx, L.ty); if (L.more > 0) later(.35, () => { if (e.alive) leapAt(e, L.more - 1); }); }
+    e.x = e.tx = L.sx + (L.tx - L.sx) * k; e.y = e.ty = L.sy + (L.ty - L.sy) * k; e.inv = .1; e.a = Math.atan2(L.ty - L.sy, L.tx - L.sx); e.aimT = .2;
+    if (k >= 1) { e.leap = null; e.inv = 0; emit(e, 'Z', L.tx, L.ty, e.a); if (L.more > 0) later(.35, () => { if (e.alive && e.mine) leapAt(e, L.more - 1); }); }
     return [0, 0];
   }
-  if (e.dash > 0) {
-    e.dash -= dt; if (!e.dashHit && d < e.r + me.r + 14) { e.dashHit = true; hurt(me, 22 + e.boss * 4, e.id, e.ddx, e.ddy, 520); }
-    return [e.ddx * 2.8, e.ddy * 2.8];
-  }
-  if (e.bt <= 0) { const p = b.pats[e.pat++ % b.pats.length]; bossAttack(e, p, a, enr); e.bt = p === 'spiral' ? 2.8 : 1.6; }
+  if (e.dash > 0) { e.dash -= dt; return [e.ddx * 2.8, e.ddy * 2.8]; }
+  if (e.bt <= 0) { const p = b.pats[e.pat++ % b.pats.length]; bossAttack(e, p, a, enr, tg); e.bt = 1.6; }
   if (e.hero === 'ghoul' && d < 150 && e.cd <= 0 && e.ammo >= 1) attack(e, a);
   else if (e.hero === 'imp' && e.cd <= 0 && e.ammo >= 1 && Math.random() < dt * 2) attack(e, a + rand(-.1, .1));
   e.a = a; e.aimT = .2; e.face = dx > 0 ? 1 : -1;
-  const pref = e.hero === 'ghoul' ? 110 : 270, k = d > pref ? 1 : d < pref * .6 ? -.7 : 0, sw = Math.sin(NOW * .7 + e.ph) * .5;
+  const pref = e.hero === 'imp' ? 270 : 110, k = d > pref ? 1 : d < pref * .6 ? -.7 : 0, sw = Math.sin(NOW * .7 + e.ph) * .5;
   return [dx / d * k - dy / d * sw, dy / d * k + dx / d * sw];
 }
 function leapAt(e, more) {
-  const me = myEnt(); if (!me || !me.alive) return;
-  const lead = .45; let tx = me.x + me.vx * lead, ty = me.y + me.vy * lead; const R = e.rb;
-  tx = clamp(tx, (R.c0 + 1) * T, (R.c1) * T); ty = clamp(ty, (R.r0 + 1) * T, (R.r1) * T); if (solidAt(tx, ty)) { tx = me.x; ty = me.y; }
-  e.leap = { sx: e.x, sy: e.y, tx, ty, t: 0, dur: .85, h: 150, more }; e.kick = 1; sfx('s', e.x, e.y);
+  const tg = nearPlayer(e); if (!tg) return;
+  const lead = .45; let tx = tg.x + tg.vx * lead, ty = tg.y + tg.vy * lead; const R = e.rb;
+  tx = clamp(tx, (R.c0 + 1) * T, (R.c1) * T); ty = clamp(ty, (R.r0 + 1) * T, (R.r1) * T); if (solidAt(tx, ty)) { tx = tg.x; ty = tg.y; }
+  e.leap = { sx: e.x, sy: e.y, tx, ty, t: 0, dur: .85, more }; emit(e, 'L', e.x, e.y, Math.atan2(ty - e.y, tx - e.x), tx, ty);
 }
-function smash(e, x, y) {
-  const Rr = 175, dm = 30;
-  for (const o of ents.values()) { if (o === e || !o.alive || o.inv > 0) continue; const dx = o.x - x, dy = o.y - y, d = Math.hypot(dx, dy); if (d > Rr + o.r) continue; hurt(o, Math.round(dm * (1 - .45 * d / Rr)), e.id, dx || 1, dy, 620, 1); }
-  FX.push({ x, y, t: 0, dur: .5, R: Rr, ice: false }); shards(x, y, ['#1d1c22', '#3a3943', '#ece3cc', '#ffcf3a'], 26, 380);
-  for (let i = 0; i < 8; i++) { const a = i * TAU / 8 + rand(-.2, .2); bullet(e.id, 1, x, y - 10, a, { sp: 330, dmg: 10, r: 8, range: 300, kind: 7 }); }
-  glowAt(GL.gold, x, y, Rr * 1.4, .3); G.shake = Math.max(G.shake, 1); sfx('boom', x, y);
-}
-function bossAttack(e, p, a, enr) {
-  const id = e.id, x = e.x, y = e.y - 30, dm = 9 + e.boss * 2, me = myEnt(); e.kick = 1;
-  const orb = (ang, sp, r) => bullet(id, 1, x, y, ang, { sp: sp || 320, dmg: dm, r: r || 9, range: 760, kind: 6 });
-  glowAt(GL.ember, x, y, 90, .3);
-  if (p === 'ring') { const n = enr ? 22 : 15; for (let i = 0; i < n; i++) orb(a + i * TAU / n, 300); sfx('nova', x, y); }
-  else if (p === 'fan') { for (let v = 0; v < (enr ? 4 : 3); v++) later(v * .24, () => { const m = myEnt(); if (!e.alive || !m) return; const aa = Math.atan2(m.y - e.y, m.x - e.x); for (let j = -3; j <= 3; j++) bullet(id, 1, e.x, e.y - 30, aa + j * .12, { sp: 430, dmg: dm, r: 8, range: 700, kind: 6 }); sfx('i', e.x, e.y); }); }
-  else if (p === 'slam') { const n = enr ? 3 : 1; for (let i = 0; i < n; i++) { const ox = i ? rand(-140, 140) : 0, oy = i ? rand(-140, 140) : 0; GR.push({ owner: id, team: 1, sx: x, sy: y, tx: me.x + ox, ty: me.y + oy, t: 0, dur: .95, R: 125, dmg: dm * 2.4, slow: 0, ice: false }); } sfx('boom', x, y); }
-  else if (p === 'charge') { const l = Math.hypot(me.x - e.x, me.y - e.y) || 1; e.ddx = (me.x - e.x) / l; e.ddy = (me.y - e.y) / l; e.dash = enr ? .75 : .6; e.dashHit = false; sfx('s', x, y); }
+function bossAttack(e, p, a, enr, tg) {
+  const aim = () => { const t = nearPlayer(e); return t ? Math.atan2(t.y - e.y, t.x - e.x) : null; };
+  if (p === 'ring') emit(e, 'R', e.x, e.y - 30, a, enr ? 22 : 15);
+  else if (p === 'fan') { for (let v = 0; v < (enr ? 4 : 3); v++) later(v * .24, () => { const aa = aim(); if (e.alive && e.mine && aa !== null) emit(e, 'F', e.x, e.y - 30, aa); }); }
+  else if (p === 'slam') { const n = enr ? 3 : 1; for (let i = 0; i < n; i++) emit(e, 'M', e.x, e.y - 30, a, tg.x + (i ? rand(-140, 140) : 0), tg.y + (i ? rand(-140, 140) : 0)); }
+  else if (p === 'charge') { e.ddx = Math.cos(a); e.ddy = Math.sin(a); e.dash = enr ? .75 : .6; emit(e, 'C', e.x, e.y, a, e.dash * 100); }
   else if (p === 'summon') { let n = 0; for (const o of ents.values()) if (o.q && !o.boss && o.alive) n++; const R = QW.rooms[e.room]; for (let i = 0; i < Math.min(enr ? 3 : 2, 6 - n); i++) { const sp = freeSpot(R, 160); makeFoe(i % 2 ? 'imp' : 'ghoul', sp[0], sp[1], R, 1 + e.room * .07); } }
-  else if (p === 'leap') { leapAt(e, enr ? 2 : 0); }
-  else if (p === 'keys') { for (let v = 0; v < (enr ? 4 : 3); v++) later(v * .62, () => { const m = myEnt(); if (!e.alive || !m || e.leap) return; const aa = Math.atan2(m.y - e.y, m.x - e.x); e.sw = 1; later(.2, () => { if (!e.alive) return; const m2 = myEnt(); const a2 = m2 ? Math.atan2(m2.y - e.y, m2.x - e.x) : aa; for (let j = -4; j <= 4; j++) bullet(id, 1, e.x, e.y - 20, a2 + j * .16 + v * .05, { sp: 380, dmg: dm, r: 9, range: 720, kind: 7 }); shards(e.x + Math.cos(a2) * 50, e.y + Math.sin(a2) * 50, ['#1d1c22', '#ece3cc'], 8, 200); sfx('boom', e.x, e.y); G.shake = Math.max(G.shake, .4); }); }); }
-  else if (p === 'spiral') { for (let i = 0; i < (enr ? 36 : 26); i++) later(i * .06, () => { if (!e.alive) return; for (let j = 0; j < 3; j++) bullet(id, 1, e.x, e.y - 30, a + i * .42 + j * TAU / 3, { sp: 300, dmg: dm, r: 8, range: 700, kind: 6 }); }); }
+  else if (p === 'leap') leapAt(e, enr ? 2 : 0);
+  else if (p === 'keys') { for (let v = 0; v < (enr ? 4 : 3); v++) later(v * .62, () => { const aa = aim(); if (e.alive && e.mine && !e.leap && aa !== null) emit(e, 'K', e.x, e.y - 20, aa + v * .05); }); }
+}
+// boss moves arrive as events, so every player's game plays them out the same way
+function bossShot(e, k, x, y, a, ev) {
+  const id = e.id, team = e.team, dm = 9 + (e.boss || 1) * 2;
+  if (k === 'R') { const n = clamp(ev[5] | 0, 4, 30); for (let i = 0; i < n; i++) bullet(id, team, x, y, a + i * TAU / n, { sp: 300, dmg: dm, r: 9, range: 760, kind: 6 }); glowAt(GL.ember, x, y, 90, .3); sfx('nova', x, y); }
+  else if (k === 'F') { for (let j = -3; j <= 3; j++) bullet(id, team, x, y, a + j * .12, { sp: 430, dmg: dm, r: 8, range: 700, kind: 6 }); glowAt(GL.ember, x, y, 70, .25); sfx('i', x, y); }
+  else if (k === 'M') { GR.push({ owner: id, team, sx: x, sy: y, tx: clamp(num(ev[5], x), 0, MW * T), ty: clamp(num(ev[6], y), 0, MH * T), t: 0, dur: .95, R: 125, dmg: dm * 2.4, slow: 0, ice: false }); sfx('boom', x, y); }
+  else if (k === 'C') { e.dashT = clamp(num(ev[5], 60), 10, 120) / 100; e.dashHitMe = false; sfx('s', x, y); }
+  else if (k === 'L') { e.lv = { tx: num(ev[5], x), ty: num(ev[6], y), t: 0, dur: .85, h: 150 }; sfx('s', x, y); }
+  else if (k === 'Z') {
+    const Rr = 175;
+    for (const o of ents.values()) { if (o === e || !o.mine || !o.alive || o.inv > 0) continue; const dx = o.x - x, dy = o.y - y, d = Math.hypot(dx, dy); if (d > Rr + o.r) continue; hurt(o, Math.round(30 * (1 - .45 * d / Rr)), id, dx || 1, dy, 620, 1); }
+    FX.push({ x, y, t: 0, dur: .5, R: Rr, ice: false }); shards(x, y, ['#1d1c22', '#3a3943', '#ece3cc', '#ffcf3a'], 26, 380);
+    for (let i = 0; i < 8; i++) bullet(id, team, x, y - 10, i * TAU / 8 + (ev[0] % 7) * .11, { sp: 330, dmg: 10, r: 8, range: 300, kind: 7 });
+    glowAt(GL.gold, x, y, Rr * 1.4, .3); G.shake = Math.max(G.shake, 1); sfx('boom', x, y);
+  }
+  else if (k === 'K') { e.sw = 1; later(.2, () => { for (let j = -4; j <= 4; j++) bullet(id, team, x, y, a + j * .16, { sp: 380, dmg: dm, r: 9, range: 720, kind: 7 }); shards(x + Math.cos(a) * 50, y + Math.sin(a) * 50, ['#1d1c22', '#ece3cc'], 8, 200); sfx('boom', x, y); G.shake = Math.max(G.shake, .4); }); }
+}
+function applyQS(q) {
+  const act = clamp(q[0] | 0, -1, QN - 1), cl = clamp(q[1] | 0, 0, QN), t = num(q[2], 0) / 10, quiet = !QS.synced; QS.synced = true; QS.hpx = clamp(num(q[3], 10) / 10, 1, 4);
+  if (Math.abs(t - QS.t) > .3) QS.t = t;
+  while (QS.cl < cl) { const i = QS.cl++; QW.rooms[i].state = 2; if (i < QN - 1) { openGate(i, quiet); if (!quiet) banner('Level ' + (i + 1) + ' cleared', 'The gate is open'); } else if (!quiet) banner('Quest complete', ''); }
+  if (act > QS.act) { QS.act = act; QS.check = act; for (let i = QS.cl; i <= act; i++) QW.rooms[i].state = 1; const n = act + 1; if (!quiet) { if (n % 5 === 0) { banner('Level ' + n + ' · ' + BOSS[n / 5 - 1].name, 'Boss fight'); sfx('go'); } else if (n > 1) banner('Level ' + n, ''); } }
+}
+function beginQuest() {
+  myMid = cfg.mid; buildQuest(cfg.qseed || 1); QID = 0; B = []; GR = []; NV = []; FX = []; Q = []; TX = []; SW = []; IC = []; PT.length = 0; GP.length = 0; match.t = 0;
+  Object.assign(QS, { check: 0, act: -1, cl: 0, t: 0, deaths: 0, done: false, ban: null, boss: null, synced: false, hpx: 1 + .5 * (roster.length) });
+  for (const e of [...ents.values()]) { if (e.isBot) ents.delete(e.id); else e.kbSeen = null; }
+  prof.team = 0; let me = myEnt(); if (!me) { me = newEnt(Net.id, true); ents.set(Net.id, me); }
+  me.name = prof.name; me.hero = prof.hero; me.team = 0; me.kb = {}; me.sup = 0; me.sh = []; me.first = true; respawn(me);
+  cam.x = me.x; cam.y = me.y; $('feed').textContent = ''; app.screen = 'play'; app.menu = false; show(null); hudOn(true); sfx('go');
+  $('goal').textContent = roster.length ? 'Team quest' : 'Quest'; banner('Level 1', roster.length ? 'Clear each room together to open the gate' : 'Clear each room to open the gate');
+}
+let qPrevMode = 0;
+function startRoomQuest() { if (!iAmHost) return; wakeAudio(); if (!cfg.quest) qPrevMode = cfg.mode; setCfg({ ph: 1, mid: (Math.random() * 1e9) | 0 || 1, mode: 1, quest: 1, qseed: (Math.random() * 1e9) | 0 || 1 }); }
+async function startQuest() {
+  wakeAudio(); saveProf();
+  if (!await Net.join(null)) return;
+  ents.clear(); roster = []; Net.id = 'me'; Net.jt = 1; iAmHost = true; hostId = 'me'; myMid = -1; qPrevMode = 0;
+  Object.assign(cfg, { cv: 1, ph: 1, mid: (Math.random() * 1e9) | 0 || 1, mode: 1, bots: 0, goal: 8, quest: 1, qseed: (Math.random() * 1e9) | 0 || 1 }); beginQuest();
+}
+function questRespawn(e) {
+  if (e.q) return;
+  const R = QW.rooms[QS.check], h = HERO[e.hero]; if (!e.first) QS.deaths++;
+  e.x = e.tx = R.ex + rand(-14, 14); e.y = e.ty = R.ey + rand(-14, 14); e.hp = h.hp; e.ammo = 3; e.alive = true; e.inv = 2; e.kx = e.ky = 0; e.slow = 0; e.frz = 0; e.scd = 0; e.cd = .3; e.first = false;
 }
 function questFlow(dt) {
-  if (app.screen !== 'play' || QS.done) return;
+  if (app.screen !== 'play') return;
   QS.t += dt; if (QS.ban) { QS.ban.t -= dt; if (QS.ban.t <= 0) QS.ban = null; }
-  for (const e of [...ents.values()]) if (e.q && !e.alive) { ents.delete(e.id); if (e === QS.boss) QS.boss = null; }
-  const me = myEnt(); if (!me) return;
+  if (QS.boss && !ents.has(QS.boss.id)) QS.boss = null;
+  if (!myEnt()) return;
   trapStep();
-  const ri = me.alive ? QW.roomOf[tileOf(me.x) + tileOf(me.y) * MW] : -1;
-  if (ri >= 0 && QW.rooms[ri].state === 0) { const R = QW.rooms[ri]; R.state = 1; QS.check = Math.max(QS.check, ri); spawnRoom(R); }
-  for (const R of QW.rooms) {
-    if (R.state !== 1) continue; let alive = 0; for (const e of ents.values()) if (e.q && e.room === R.i && e.alive) alive++;
-    if (alive) continue; R.state = 2;
-    if (R.i < QN - 1) { openGate(R.i); banner('Level ' + (R.i + 1) + ' cleared', 'The gate is open'); }
-    else { QS.done = true; banner('Quest complete', ''); later(1.6, questWin); }
+  if (!iAmHost) return;
+  for (const e of [...ents.values()]) if (e.q) { if (!e.mine) adoptFoe(e); if (!e.alive) { e.deadT = (e.deadT || 0) + dt; if (e.deadT > .4) ents.delete(e.id); } }
+  if (QS.done) return;
+  const nx = QS.act + 1;
+  if (nx < QN && nx <= QS.cl) for (const o of ents.values()) { if (o.q || o.isBot || !o.alive || QW.roomOf[tileOf(o.x) + tileOf(o.y) * MW] !== nx) continue; QS.act = QS.check = nx; QW.rooms[nx].state = 1; spawnRoom(QW.rooms[nx]); break; }
+  if (QS.act >= QS.cl) {
+    let alive = 0; for (const e of ents.values()) if (e.q && e.room === QS.act && e.alive) alive++;
+    if (!alive) { const i = QS.act; QS.cl = i + 1; QW.rooms[i].state = 2;
+      if (i < QN - 1) { openGate(i); banner('Level ' + (i + 1) + ' cleared', 'The gate is open'); }
+      else { QS.done = true; banner('Quest complete', ''); later(1.6, () => { if (iAmHost && cfg.quest && cfg.ph === 1) setCfg({ ph: 2 }); }); } }
   }
 }
 function questWin() {
   app.screen = 'end'; app.menu = false; hudOn(false);
+  const rows = tally().rows.filter(r => !r.bot), falls = rows.reduce((a, r) => a + r.d, 0), team = rows.length > 1;
   $('endTitle').textContent = 'Quest complete';
-  $('endLine').textContent = 'All 20 levels and four bosses cleared in ' + fmt(QS.t) + ' as ' + HERO[prof.hero].name + ', with ' + QS.deaths + (QS.deaths === 1 ? ' fall.' : ' falls.');
-  $('endList').textContent = ''; $('againBtn').textContent = 'Quest again'; $('againBtn').hidden = false; $('backBtn').hidden = true; $('endNote').textContent = '';
+  $('endLine').textContent = 'All 20 levels and four bosses cleared in ' + fmt(QS.t) + (team ? ' by a team of ' + rows.length : ' as ' + HERO[prof.hero].name) + ', with ' + falls + (falls === 1 ? ' fall.' : ' falls.');
+  const box = $('endList'); box.textContent = ''; if (team) for (const r of rows) box.append(rowEl(r.name, r.d + (r.d === 1 ? ' fall' : ' falls'), 't0' + (r.id === Net.id ? ' me' : '')));
+  $('againBtn').textContent = 'Quest again'; $('againBtn').hidden = !iAmHost; $('backBtn').hidden = !iAmHost || Net.code === null; $('endNote').textContent = iAmHost ? '' : 'Waiting for the host to choose what happens next.';
   show('end'); sfx('go');
 }
 function questArrow(me) {
@@ -1314,7 +1352,7 @@ function render(dt) {
     for (const n of NV) { const k = Math.min(1, n.t / n.dur), rad = n.R * (1 - (1 - k) * (1 - k)); ctx.strokeStyle = 'rgba(255,246,214,' + (1 - k) + ')'; ctx.lineWidth = 12 * (1 - k) + 2; ctx.beginPath(); ctx.arc(n.x, n.y, rad, 0, TAU); ctx.stroke(); ctx.fillStyle = 'rgba(200,214,255,' + (.2 * (1 - k)) + ')'; ctx.fill(); }
     for (const f of FX) { const k = f.t / f.dur; ctx.fillStyle = (f.ice ? 'rgba(150,215,255,' : 'rgba(255,150,70,') + (.45 * (1 - k)) + ')'; ctx.beginPath(); ctx.arc(f.x, f.y, f.R * (.4 + .6 * k), 0, TAU); ctx.fill(); ctx.strokeStyle = (f.ice ? 'rgba(240,250,255,' : 'rgba(190,160,255,') + (1 - k) + ')'; ctx.lineWidth = 6 * (1 - k) + 1; ctx.stroke(); }
     for (const g of GR) { ctx.strokeStyle = g.ice ? 'rgba(159,227,255,.8)' : 'rgba(255,123,57,.7)'; ctx.lineWidth = 2; ctx.setLineDash([6, 6]); ctx.beginPath(); ctx.arc(g.tx, g.ty, g.R * Math.min(1, .3 + g.t / g.dur), 0, TAU); ctx.stroke(); ctx.setLineDash([]); }
-    for (const e of ents.values()) if (e.leap) { const L = e.leap, k = L.t / L.dur, pu = .5 + Math.sin(NOW * 18) * .25; ctx.fillStyle = 'rgba(216,69,75,' + (.12 + k * .22) + ')'; ctx.beginPath(); ctx.arc(L.tx, L.ty, 175, 0, TAU); ctx.fill(); ctx.strokeStyle = 'rgba(255,110,90,' + pu + ')'; ctx.lineWidth = 3; ctx.stroke(); ctx.beginPath(); ctx.arc(L.tx, L.ty, 175 * k, 0, TAU); ctx.stroke(); }
+    for (const e of ents.values()) if (e.lv) { const L = e.lv, k = L.t / L.dur, pu = .5 + Math.sin(NOW * 18) * .25; ctx.fillStyle = 'rgba(216,69,75,' + (.12 + k * .22) + ')'; ctx.beginPath(); ctx.arc(L.tx, L.ty, 175, 0, TAU); ctx.fill(); ctx.strokeStyle = 'rgba(255,110,90,' + pu + ')'; ctx.lineWidth = 3; ctx.stroke(); ctx.beginPath(); ctx.arc(L.tx, L.ty, 175 * k, 0, TAU); ctx.stroke(); }
     for (const c of IC) { const grow = Math.min(1, c.t / .22), melt = Math.min(1, (c.dur - c.t) / .5), k = grow * melt, mine = me && !iceFoe(c, me.id, me.team);
       ctx.fillStyle = 'rgba(150,210,255,' + (.1 * k) + ')'; ctx.beginPath(); ctx.arc(c.x, c.y, c.R, 0, TAU); ctx.fill(); ctx.strokeStyle = (mine ? 'rgba(160,220,255,' : 'rgba(255,140,140,') + (.5 * k) + ')'; ctx.lineWidth = 3; ctx.stroke();
       for (let i = 0; i < 14; i++) { const a = i * TAU / 14, y = c.y + Math.sin(a) * c.R; order.push({ ice: true, x: c.x + Math.cos(a) * c.R, y, key: y + 6, k, h: hash(i, Math.round(c.x)) }); } }
@@ -1435,6 +1473,7 @@ function lobbyTick() {
   $('lobbyNote').textContent = joining ? 'Joining…' : iAmHost ? (local ? 'Practice runs on this device only.' : 'Give the code to anyone who can open this page. They pick Join room and type it in.') : 'Waiting for the host to start the match.';
 }
 function showEnd() {
+  if (cfg.quest) { questWin(); return; }
   const t = tally(), me = t.rows.find(r => r.id === Net.id); app.screen = 'end'; app.menu = false; hudOn(false);
   let title, line;
   if (cfg.mode) { const w = t.tk[0] === t.tk[1] ? -1 : t.tk[0] > t.tk[1] ? 0 : 1; title = w < 0 ? 'Draw' : w === prof.team ? 'Your team wins' : 'Your team lost'; line = 'Ember ' + t.tk[0] + ' : ' + t.tk[1] + ' Moon'; }
@@ -1574,8 +1613,9 @@ for (const b of $('modeSeg').children) b.addEventListener('click', () => { if (i
 $('botMinus').addEventListener('click', () => { if (iAmHost && cfg.bots > 0) setCfg({ bots: cfg.bots - 1 }); });
 $('botPlus').addEventListener('click', () => { if (iAmHost && cfg.bots < 4) setCfg({ bots: cfg.bots + 1 }); });
 $('startBtn').addEventListener('click', () => { if (iAmHost) startMatch(); });
-$('againBtn').addEventListener('click', () => { if (cfg.quest) startQuest(); else if (iAmHost) startMatch(); });
-$('backBtn').addEventListener('click', () => { if (iAmHost) setCfg({ ph: 0 }); });
+$('againBtn').addEventListener('click', () => { if (!iAmHost) return; if (cfg.quest) startRoomQuest(); else startMatch(); });
+$('questRoomBtn').addEventListener('click', startRoomQuest);
+$('backBtn').addEventListener('click', () => { if (iAmHost) setCfg(cfg.quest ? { ph: 0, quest: 0, mode: qPrevMode } : { ph: 0 }); });
 $('menuBtn').addEventListener('click', () => toggleMenu(true)); $('resumeBtn').addEventListener('click', () => toggleMenu(false));
 $('soundBtn').addEventListener('click', () => { muted = !muted; $('soundBtn').textContent = 'Sound: ' + (muted ? 'off' : 'on'); });
 $('nameIn').addEventListener('change', saveProf);
@@ -1594,7 +1634,7 @@ function boot(data) {
 }
 window.claude?.hot?.snapshot?.(() => ({ name: prof.name, hero: prof.hero }));
 if (window.claude?.hot?.ready) window.claude.hot.ready(boot); else boot(window.claude?.hot?.data ?? {});
-window.__hh = { app, cfg, ents, Net, dbg, tally, QS, QW, startQuest, openGate, get grid() { return GRID; }, get roster() { return roster; }, get host() { return iAmHost; } };
+window.__hh = { app, cfg, ents, Net, dbg, tally, QS, QW, startQuest, openGate, startRoomQuest, get grid() { return GRID; }, get roster() { return roster; }, get host() { return iAmHost; } };
 })();
 </script>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
