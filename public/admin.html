@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Hollow Hours — login monitor</title>
+<style>
+:root{--ash:#0d0c12;--bone:#ece3cc;--dim:#a39db0;--ember:#ff7b39;--moon:#9db8ff;--ok:#8fe39a;--bad:#d8454b;--panel:#16151e;--line:rgba(236,227,204,.14);color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ash);color:var(--bone);font:15px/1.4 'Saira Semi Condensed','Arial Narrow','Helvetica Neue',system-ui,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:22px 16px 40px;display:flex;flex-direction:column;gap:18px}
+h1{margin:0;font:400 34px/1 'Saira Stencil One',Impact,sans-serif;letter-spacing:.02em}h1 em{font-style:normal;color:var(--ember)}
+h2{margin:0 0 8px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.note{color:var(--dim);font-size:13px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.tile{background:var(--panel);border:1px solid var(--line);padding:12px 14px}
+.tile b{display:block;font:400 32px/1 'Saira Stencil One',Impact,sans-serif;font-variant-numeric:tabular-nums}
+.tile span{font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em}
+.wrap{overflow-x:auto;border:1px solid var(--line);background:var(--panel)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);font-weight:700;position:sticky;top:0;background:var(--panel)}
+td.num{font-variant-numeric:tabular-nums;text-align:right}
+.tag{display:inline-block;padding:1px 6px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border:1px solid var(--line)}
+.google{color:var(--moon)}.guest{color:var(--dim)}.on{color:var(--ok)}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+input,select,button{font:inherit;color:inherit;background:var(--panel);border:1px solid var(--line);padding:7px 10px}
+a{color:var(--ember)}
+.empty{padding:14px;color:var(--dim)}
+[hidden]{display:none!important}
+#gate{max-width:420px;margin:12vh auto;padding:0 16px;display:flex;flex-direction:column;gap:14px}
+</style>
+</head>
+<body>
+<div id="gate" hidden><h1>Login <em>monitor</em></h1><p class="note" id="gateMsg">Sign in with an owner Google account to see who is playing.</p><div id="gbtn"></div></div>
+<main id="app" hidden>
+  <div class="top"><h1>Hollow Hours <em>monitor</em></h1><span class="note" id="upd"></span></div>
+  <div class="tiles" id="tiles"></div>
+  <section><h2>Online now</h2><div class="wrap"><table><thead><tr><th>Player</th><th>Email</th><th>Method</th><th>Where</th><th>Connected</th><th>Device</th><th>IP</th></tr></thead><tbody id="online"></tbody></table></div></section>
+  <section><h2>Login history</h2>
+    <div class="filters"><input id="q" type="search" placeholder="Search name or email" aria-label="Search name or email"><select id="ev" aria-label="Event"><option value="">All events</option><option>login</option><option>visit</option><option>joined room</option><option>left room</option><option>logout</option></select><select id="kind" aria-label="Method"><option value="">Google and guests</option><option value="google">Google only</option><option value="guest">Guests only</option></select></div>
+    <div class="wrap" style="max-height:60vh"><table><thead><tr><th>Time</th><th>Event</th><th>Player</th><th>Email</th><th>Method</th><th>Room</th><th class="num">Minutes</th><th>Device</th><th>IP</th></tr></thead><tbody id="log"></tbody></table></div>
+    <p class="note" id="sheet"></p>
+  </section>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+let data = null;
+const td = (tr, v, cls) => { const c = document.createElement('td'); c.textContent = v ?? ''; if (cls) c.className = cls; tr.append(c); return c; };
+const tag = (tr, k) => { const c = td(tr, ''); const s = document.createElement('span'); s.className = 'tag ' + k; s.textContent = k; c.append(s); };
+const when = t => { const d = new Date(t); return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) + ' ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }); };
+const ago = t => { const s = Math.round((Date.now() - t) / 1000); return s < 60 ? s + 's' : s < 3600 ? Math.round(s / 60) + ' min' : (s / 3600).toFixed(1) + ' h'; };
+function draw() {
+  if (!data) return; const s = data.stats;
+  $('tiles').textContent = '';
+  for (const [v, l] of [[data.online.length, 'online now'], [data.rooms.length, 'open rooms'], [s.today, 'logins today'], [s.todayPlayers, 'players today'], [s.weekPlayers, 'players this week'], [s.google + ' / ' + s.guest, 'Google / guest logins']]) { const d = document.createElement('div'); d.className = 'tile'; const b = document.createElement('b'); b.textContent = v; const sp = document.createElement('span'); sp.textContent = l; d.append(b, sp); $('tiles').append(d); }
+  const on = $('online'); on.textContent = '';
+  if (!data.online.length) { const tr = document.createElement('tr'); const c = td(tr, 'Nobody is connected right now.', 'empty'); c.colSpan = 7; on.append(tr); }
+  for (const o of data.online) { const tr = document.createElement('tr'); td(tr, o.name); td(tr, o.email); tag(tr, o.kind); td(tr, o.room ? 'Room ' + o.room.toUpperCase() + (o.playing ? ' · in a match' : ' · lobby') : 'Home / quest / practice', o.room ? 'on' : ''); td(tr, ago(o.since)); td(tr, o.ua); td(tr, o.ip); on.append(tr); }
+  const q = $('q').value.trim().toLowerCase(), ev = $('ev').value, k = $('kind').value, lg = $('log'); lg.textContent = '';
+  const rows = data.log.filter(e => (!ev || e.ev === ev) && (!k || e.kind === k) && (!q || (e.name || '').toLowerCase().includes(q) || (e.email || '').toLowerCase().includes(q)));
+  if (!rows.length) { const tr = document.createElement('tr'); const c = td(tr, 'No entries match.', 'empty'); c.colSpan = 9; lg.append(tr); }
+  for (const e of rows) { const tr = document.createElement('tr'); td(tr, when(e.at)); td(tr, e.ev); td(tr, e.name); td(tr, e.email); tag(tr, e.kind || ''); td(tr, (e.room || '').toUpperCase()); td(tr, e.mins ?? '', 'num'); td(tr, e.ua); td(tr, e.ip); lg.append(tr); }
+  const sh = data.sheet, p = $('sheet'); p.textContent = '';
+  if (sh.status === 'sheet') { p.append('Every entry is also saved to '); const a = document.createElement('a'); a.href = sh.url; a.target = '_blank'; a.textContent = 'the Hollow Hours login record sheet'; p.append(a, ' in your Google Drive' + (sh.pending ? ` (${sh.pending} waiting to be written).` : '.')); }
+  else if (sh.status === 'error') p.textContent = 'The Google Sheet could not be opened, so the record is in memory only: ' + sh.error;
+  else p.textContent = 'The record is kept in memory and is cleared when the server restarts. Add GOOGLE_CLIENT_SECRET and GOOGLE_REFRESH_TOKEN on Render to keep it in a Google Sheet.';
+  if (!data.guests) p.append(' Guest play is switched off.');
+  $('upd').textContent = 'Updated ' + new Date(data.now).toLocaleTimeString();
+}
+async function load() {
+  const r = await fetch('/api/admin');
+  if (r.status === 403) return false;
+  data = await r.json(); $('gate').hidden = true; $('app').hidden = false; draw(); return true;
+}
+for (const id of ['q', 'ev', 'kind']) $(id).addEventListener('input', draw);
+(async () => {
+  if (await load()) { setInterval(() => load().catch(() => {}), 5000); return; }
+  $('gate').hidden = false;
+  const cfg = await (await fetch('/api/config')).json();
+  if (cfg.user) $('gateMsg').textContent = cfg.user.email ? cfg.user.email + ' is not an owner account. Sign in with an owner account.' : 'You are signed in as a guest. Sign in with an owner Google account.';
+  if (!cfg.clientId) { $('gateMsg').textContent = 'Google sign-in is not set up on this server yet (GOOGLE_CLIENT_ID).'; return; }
+  const s = document.createElement('script'); s.src = 'https://accounts.google.com/gsi/client'; s.onload = () => {
+    google.accounts.id.initialize({ client_id: cfg.clientId, callback: async res => { const r = await fetch('/api/login/google', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ credential: res.credential }) }); if (r.ok && await load()) setInterval(() => load().catch(() => {}), 5000); else $('gateMsg').textContent = 'That account is not an owner of this game.'; } });
+    google.accounts.id.renderButton($('gbtn'), { theme: 'filled_black', size: 'large', text: 'signin_with' });
+  }; document.head.append(s);
+})();
+</script>
+</body>
+</html>

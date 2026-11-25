@@ -1,0 +1,19 @@
+{
+  "name": "hollow-hours",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Hollow Hours \u2014 top-down arena brawler with rooms, a 20-level quest, Google sign-in and an owner login monitor",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "build": "node scripts/build-index.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "google-auth-library": "^9.15.1",
+    "ws": "^8.18.0"
+  }
+}

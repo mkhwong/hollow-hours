@@ -1,0 +1,23 @@
+# Render Blueprint — Hollow Hours
+services:
+  - type: web
+    name: hollow-hours
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REFRESH_TOKEN
+        sync: false
+      - key: OWNER_EMAILS
+        sync: false
+      - key: SESSION_SECRET
+        generateValue: true
