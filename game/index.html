@@ -560,18 +560,18 @@ const HK = ['vesper', 'ilwen', 'bram', 'wren', 'tundra', 'tatter', 'bracken'];
 const HERO = {
   vesper: { name: 'Vesper', role: 'Gunslinger', sec: { t: 'stun', name: 'Stun', cd: 9 }, hp: 100, speed: 215, reload: 1.3, cd: .42, atk: 'v', range: 380, psp: 840, sup: 'g', srange: 360, need: 110, gw: .045, sg: { t: 'lob', R: 115 }, pips: [3, 5, 4],
     info: ['Fires a tight burst of four rounds.', 'Soul Grenade: lobs a blast over walls.', 'Stun Grenade: lob a flashbang where you aim; everyone caught in the burst is stunned for 1.3 seconds, unable to move or attack. Ready every 9 seconds.'] },
-  ilwen: { name: 'Ilwen', role: 'Moon oracle', sec: { t: 'well', name: 'Mend', cd: 12 }, hp: 90, speed: 205, reload: 1.3, cd: .45, atk: 'i', range: 330, psp: 660, sup: 'n', srange: 170, need: 100, gw: .12, sg: { t: 'self', R: 190 }, pips: [3, 5, 4],
-    info: ['One heavy, fast bolt that passes through fighters.', 'Moonfall: a ring that hurls and slows everyone close.', 'Mend: a pulse of moonlight that heals you and nearby teammates for 30. Ready every 12 seconds.'] },
+  ilwen: { name: 'Ilwen', role: 'Moon oracle', sec: { t: 'triple', name: 'Triple', cd: 8 }, hp: 90, speed: 205, reload: 1.3, cd: .45, atk: 'i', range: 330, psp: 660, sup: 'n', srange: 170, need: 100, gw: .12, sg: { t: 'self', R: 190 }, pips: [3, 5, 4],
+    info: ['One heavy, fast bolt that passes through fighters.', 'Moonfall: a ring that hurls and slows everyone close.', 'Triple Bolt: three moon bolts in a fan, 20 each, that pass through fighters. Ready every 8 seconds.'] },
   bram: { name: 'Bram', role: 'Gravedigger', sec: { t: 'fire', name: 'Petrol', cd: 10 }, hp: 140, speed: 198, reload: 1.5, cd: .55, atk: 'b', range: 240, psp: 700, sup: 'B', srange: 300, need: 120, gw: .3, sg: { t: 'wedge', R: 310, w: .4 }, pips: [5, 2, 3],
     info: ['A five-pellet spread: each pellet hits three times harder point-blank than at full reach.', 'Last Rites: a wide blast that throws fighters back.', 'Petrol Bomb: lob a bottle where you aim that bursts into a fire patch for 4 seconds, burning enemies standing in it for 8 damage every half second. Ready every 10 seconds.'] },
-  wren: { name: 'Wren', role: 'Cat rogue', sec: { t: 'dash', name: 'Dash', cd: 4 }, hp: 100, speed: 225, reload: 1.1, cd: .42, atk: 'k', range: 125, psp: 9999, sup: 'W', srange: 440, need: 100, gw: 1.25, sg: { t: 'wedge', R: 450, w: .3 }, pips: [3, 1, 5],
-    info: ['A wide dagger swing, the hardest single hit in the game, cutting everyone in a broad arc up close.', 'Fan of Knives: five blades in a fan that pass through fighters.', 'Dash: a quick burst toward your aim that slips through shots. Ready every 4 seconds.'] },
-  tundra: { name: 'Tundra', role: 'Frost mage', sec: { t: 'castle', name: 'Castle', cd: 12 }, hp: 100, speed: 200, reload: 1.3, cd: .5, atk: 't', range: 290, psp: 560, sup: 'T', srange: 340, need: 110, gw: .13, sg: { t: 'lob', R: 130 }, pips: [3, 4, 3],
-    info: ['An ice ball with a 50% chance to slow and a 20% chance to freeze the target solid (12.5% on bosses).', 'Whiteout: lobs a freezing blast over walls.', 'Ice Castle: a ring of ice walls rises around you for 4 seconds, shoving enemies out and stopping their shots and steps. You and your team pass and shoot through it. Ready every 12 seconds.'] },
-  tatter: { name: 'Tatter', role: 'Pirate otter', sec: { t: 'knives', name: 'Knives', cd: 6 }, hp: 120, speed: 212, reload: .6, cd: .2, atk: 'o', range: 270, psp: 900, sup: 'S', srange: 370, need: 90, gw: .05, sg: { t: 'wedge', R: 380, w: .05 }, pips: [4, 3, 2],
-    info: ['Rapid fire: quick three-shot bursts that hit lightly but never stop coming.', 'Reel In: a hook that drags a fighter to you.', 'Homing Knives: spin out two knives that curve out left and right, then home in on the nearest enemy for 18 each. Ready every 6 seconds.'] },
-  bracken: { name: 'Bracken', role: 'Apothecary', sec: { t: 'tonic', name: 'Tonic', cd: 9 }, hp: 85, speed: 205, reload: 1.4, cd: .5, atk: 'a', lob: 62, range: 240, psp: 520, sup: 'A', srange: 330, need: 110, gw: .1, sg: { t: 'lob', R: 125 }, pips: [2, 3, 3],
-    info: ['Lobs a potion flask over walls; it bursts where it lands for up to 19 on everyone close.', 'Witchbrew: lobs a cauldron-sized flask that leaves a bubbling acid pool for 4.5 seconds, burning enemies inside for 10 every half second.', 'Tonic: drink up for 3 seconds of 45% faster movement. Ready every 9 seconds.'] },
+  wren: { name: 'Wren', role: 'Cat rogue', sec: { t: 'dash', name: 'Dash', cd: 6 }, hp: 100, speed: 225, reload: 1.1, cd: .42, atk: 'k', range: 125, psp: 9999, sup: 'W', srange: 440, need: 100, gw: 1.25, sg: { t: 'wedge', R: 450, w: .3 }, pips: [3, 1, 5],
+    info: ['A wide dagger swing, the hardest single hit in the game, cutting everyone in a broad arc up close.', 'Fan of Knives: five blades in a fan that pass through fighters.', 'Dash: a quick burst toward your aim that slips through shots. Ready every 6 seconds.'] },
+  tundra: { name: 'Tundra', role: 'Frost mage', sec: { t: 'frost', name: 'Blizzard', cd: 10 }, hp: 80, speed: 200, reload: 1.3, cd: .5, atk: 't', range: 290, psp: 560, sup: 'I', srange: 170, need: 110, gw: .13, sg: { t: 'self', R: 88 }, pips: [2, 4, 3],
+    info: ['An ice ball with a 30% chance to slow and a 5% chance to freeze the target solid (2% on bosses).', 'Ice Castle: a ring of ice walls rises around you for 5 seconds, shoving enemies out and stopping their shots and steps. You and your team pass and shoot through it.', 'Blizzard: lob a wide burst of ice where you aim, hitting everyone in a large area for up to 24 and slowing them for 2 seconds. Ready every 10 seconds.'] },
+  tatter: { name: 'Tatter', role: 'Pirate otter', sec: { t: 'knives', name: 'Knives', cd: 5 }, hp: 120, speed: 212, reload: .6, cd: .2, atk: 'o', range: 270, psp: 900, sup: 'S', srange: 370, need: 90, gw: .05, sg: { t: 'wedge', R: 380, w: .05 }, pips: [4, 3, 3],
+    info: ['Rapid fire: quick three-shot bursts that hit lightly but never stop coming.', 'Reel In: a hook that drags a fighter to you.', 'Homing Knives: spin out two knives that curve out left and right, then home in on the nearest enemy for 28 each and slow it. Ready every 5 seconds.'] },
+  bracken: { name: 'Bracken', role: 'Apothecary', sec: { t: 'jars', name: '3 Jars', cd: 8 }, hp: 85, speed: 205, reload: 1.4, cd: .5, atk: 'a', lob: 62, range: 240, psp: 520, sup: 'A', srange: 330, need: 110, gw: .1, sg: { t: 'lob', R: 145 }, pips: [2, 3, 3],
+    info: ['Lobs a potion flask over walls; it bursts where it lands for up to 19 on everyone close.', 'Witchbrew: lobs one huge jar that bursts over a wide area and leaves a bubbling acid pool for 4.5 seconds, burning enemies inside for 10 every half second.', 'Three Jars: lob three flasks at once in a spread, each bursting for up to 19. Ready every 8 seconds.'] },
   ghoul: { name: 'Ghoul', role: 'Pawn', hp: 70, speed: 185, reload: 1.2, cd: .9, atk: 'c', range: 95, psp: 9999, need: 1e9, pips: [0, 0, 0], info: ['', ''] },
   dog: { name: 'Beta Tester', role: 'Boss', hp: 2600, speed: 150, reload: 1, cd: .8, atk: 'c', range: 120, psp: 9999, need: 1e9, pips: [0, 0, 0], info: ['', ''] },
   imp: { name: 'Imp', role: 'Pawn', hp: 50, speed: 165, reload: 1.6, cd: 1.1, atk: 'e', range: 380, psp: 380, need: 1e9, pips: [0, 0, 0], info: ['', ''] }
@@ -784,9 +784,9 @@ function spawnShot(e, ev) {
   else if (k === 'g' || k === 'T') { const ice = k === 'T'; GR.push({ owner: id, team, sx: x, sy: y, tx: clamp(num(ev[5], x), 0, MW * T), ty: clamp(num(ev[6], y), 0, MH * T), t: 0, dur: .55, R: ice ? 130 : 115, dmg: ice ? 30 : 44, slow: ice ? 3 : 0, ice }); sfx('i', x, y); }
   else if (k === 'w') { bullet(id, team, x, y, a, { sp: 980, dmg: 30, r: 4, range: 470, kind: 3 }); sfx('w', x, y); }
   else if (k === 'W') { for (let i = 0; i < 5; i++) bullet(id, team, x, y, a + (i - 2) * .11, { sp: 900, dmg: 22, r: 4, range: 450, kind: 3, pierce: true }); sfx('w', x, y); }
-  else if (k === 't') { bullet(id, team, x, y, a, { sp: 560, dmg: 26, r: 16, range: HERO.tundra.range, kind: 5, slow: .8, slowP: .5, frz: .2 }); glowAt(GL.moon, x, y, 30, .14); sfx('t', x, y); }
+  else if (k === 't') { bullet(id, team, x, y, a, { sp: 560, dmg: 26, r: 16, range: HERO.tundra.range, kind: 5, slow: .8, slowP: .3, frz: .05 }); glowAt(GL.moon, x, y, 30, .14); sfx('t', x, y); }
   else if (k === 'k') { SW.push({ owner: id, team, x, y, a, t: 0, dur: .18, R: HERO.wren.range, half: 1.25, hit: new Set(), dmg: 50 }); sfx('s', x, y); }
-  else if (k === 'o') { for (let i = 0; i < 3; i++) later(i * .06, () => { bullet(id, team, x, y, a + rand(-.04, .04), { sp: 900, dmg: 7, r: 4, range: HERO.tatter.range, kind: 0 }); glowAt(GL.ember, x, y, 22, .1); sfx('v', x, y); const s = ents.get(id); if (s) s.kick = 1; }); }
+  else if (k === 'o') { for (let i = 0; i < 3; i++) later(i * .06, () => { bullet(id, team, x, y, a + rand(-.04, .04), { sp: 900, dmg: 9, r: 4, range: HERO.tatter.range, kind: 0 }); glowAt(GL.ember, x, y, 22, .1); sfx('v', x, y); const s = ents.get(id); if (s) s.kick = 1; }); }
   else if (k === 's') { SW.push({ owner: id, team, x, y, a, t: 0, dur: .2, R: 105, half: .95, hit: new Set() }); sfx('s', x, y); }
   else if (k === 'S') { bullet(id, team, x, y, a, { sp: 900, dmg: 20, r: 8, range: 380, kind: 4, knock: -1300, slow: 1 }); sfx('s', x, y); }
   else if (k === 'c') { if (e.boss) e.sw = 1; SW.push({ owner: id, team, x, y, a, t: 0, dur: .22, R: e.boss ? 150 : 85, half: .8, hit: new Set(), dmg: Math.round(13 * (e.pow || 1) * (e.boss ? 2 : 1)) }); sfx('s', x, y); }
@@ -796,9 +796,12 @@ function spawnShot(e, ev) {
     for (const o of ents.values()) { if (!o.mine || !o.alive || hostile(id, team, o) || Math.hypot(o.x - x, o.y - y) > Rr) continue; const mx = o.mhp || HERO[o.hero].hp, was = o.hp; o.hp = Math.min(mx, o.hp + 30); if (TX.length < 40) TX.push({ x: o.x, y: o.y - 74, v: '+' + Math.round(o.hp - was), life: .9 }); }
     FX.push({ x, y, t: 0, dur: .6, R: Rr, ice: true }); glowAt(GL.moon, x, y - 10, Rr * 1.5, .5); glowAt(GL.gold, x, y - 20, 60, .5); for (let i = 0; i < 10; i++) glowAt(GL.gold, x + rand(-Rr, Rr) * .7, y + rand(-Rr, Rr) * .7, 12, .7, -50); sfx('nova', x, y); }
   else if (k === 'U' || k === 'P') { GR.push({ owner: id, team, sx: x, sy: y - 20, tx: clamp(num(ev[5], x), 0, MW * T), ty: clamp(num(ev[6], y), 0, MH * T), t: 0, dur: .7, R: k === 'U' ? 95 : 100, dmg: k === 'U' ? 8 : 6, slow: 0, ice: false, stun: k === 'U', fire: k === 'P' }); sfx('v', x, y); }
-  else if (k === 'a' || k === 'A') { const big = k === 'A'; GR.push({ owner: id, team, sx: x, sy: y, tx: clamp(num(ev[5], x), 0, MW * T), ty: clamp(num(ev[6], y), 0, MH * T), t: 0, dur: big ? .7 : .5, R: big ? 125 : 62, dmg: big ? 12 : 19, slow: 0, ice: false, fire: big, acid: true }); sfx('w', x, y); }
-  else if (k === 'N') { for (const sd of [-1, 1]) bullet(id, team, x, y, a + sd * 1.05, { sp: 470, dmg: 18, r: 7, range: 520, kind: 8, pierce: false, home: sd }); sfx('s', x, y); glowAt(GL.white, x, y, 30, .15); }
-  else if (k === 'I') { const c = { owner: id, team, x, y, t: 0, dur: 4, R: 88 }; IC.push(c); e.kick = .4;
+  else if (k === 'a' || k === 'A') { const big = k === 'A'; GR.push({ owner: id, team, sx: x, sy: y, tx: clamp(num(ev[5], x), 0, MW * T), ty: clamp(num(ev[6], y), 0, MH * T), t: 0, dur: big ? .7 : .5, R: big ? 145 : 62, dmg: big ? 12 : 19, slow: 0, ice: false, fire: big, acid: true }); sfx('w', x, y); }
+  else if (k === 'Y') { GR.push({ owner: id, team, sx: x, sy: y - 20, tx: clamp(num(ev[5], x), 0, MW * T), ty: clamp(num(ev[6], y), 0, MH * T), t: 0, dur: .6, R: 150, dmg: 24, slow: 2, ice: true }); sfx('i', x, y); }
+  else if (k === 'q') { const tx = num(ev[5], x), ty = num(ev[6], y), d = Math.hypot(tx - x, ty - y), an = Math.atan2(ty - y, tx - x); [-.42, 0, .42].forEach((o, i) => later(i * .09, () => { GR.push({ owner: id, team, sx: x, sy: y - 20, tx: clamp(x + Math.cos(an + o) * d, 0, MW * T), ty: clamp(y + Math.sin(an + o) * d, 0, MH * T), t: 0, dur: .5, R: 62, dmg: 19, slow: 0, ice: false, acid: true }); sfx('w', x, y); })); }
+  else if (k === 'J') { for (const o of [-.2, 0, .2]) bullet(id, team, x, y, a + o, { sp: 660, dmg: 20, r: 11, range: HERO.ilwen.range, kind: 1, pierce: true }); glowAt(GL.gold, x, y - 30, 44, .2); sfx('i', x, y); sfx('nova', x, y); }
+  else if (k === 'N') { for (const sd of [-1, 1]) bullet(id, team, x, y, a + sd * 1.05, { sp: 520, dmg: 28, r: 8, range: 620, kind: 8, pierce: false, home: sd, slow: 1 }); sfx('s', x, y); glowAt(GL.white, x, y, 30, .15); }
+  else if (k === 'I') { const c = { owner: id, team, x, y, t: 0, dur: 5, R: 88 }; IC.push(c); e.kick = .4;
     for (const o of ents.values()) { if (!o.mine || !o.alive || o.leap || !iceFoe(c, o.id, o.team)) continue; const dx = o.x - x, dy = o.y - y, d = Math.hypot(dx, dy) || 1, need = c.R + o.r + 3 - d; if (need > 0) { moveEnt(o, dx / d * need, dy / d * need); o.slow = Math.max(o.slow, 1); } }
     for (let i = 0; i < 12; i++) shards(x + Math.cos(i * TAU / 12) * c.R, y + Math.sin(i * TAU / 12) * c.R, ['#bfeaff', '#f4fbff', '#7fb0ff'], 3, 150); glowAt(GL.moon, x, y, c.R * 1.8, .4); sfx('t', x, y); sfx('nova', x, y); }
   else if (k === 'n') { NV.push({ owner: id, team, x, y, t: 0, dur: .42, R: 190, hit: new Set() }); sfx('nova', x, y); }
@@ -814,16 +817,18 @@ function superCast(e, a, dist) {
   const h = HERO[e.hero]; if (!e.alive || e.sup < 1 || e.frz > 0 || cfg.ph !== 1) return false;
   e.sup = 0; let ev;
   if (h.sg.t === 'lob') { const d = clamp(dist, 70, h.srange); ev = [++e.sid, h.sup, Math.round(e.x), Math.round(e.y - 20), Math.round(a * 100), Math.round(e.x + Math.cos(a) * d), Math.round(e.y + Math.sin(a) * d)]; }
-  else if (h.sup === 'n') ev = [++e.sid, 'n', Math.round(e.x), Math.round(e.y), Math.round(a * 100)];
+  else if (h.sg.t === 'self') ev = [++e.sid, h.sup, Math.round(e.x), Math.round(e.y), Math.round(a * 100)];
   else ev = [++e.sid, h.sup, Math.round(e.x + Math.cos(a) * 18), Math.round(e.y - 10 + Math.sin(a) * 18), Math.round(a * 100)];
   e.sh.push({ ev, t: NOW }); if (e.sh.length > 4) e.sh.shift(); spawnShot(e, ev); return true;
 }
+const LOBS = { stun: 'U', fire: 'P', frost: 'Y', jars: 'q' };
 function secondary(e, a, dist) {
   const sec = HERO[e.hero].sec; if (!sec || !e.alive || e.frz > 0 || (e.scd || 0) > 0 || cfg.ph !== 1) return false;
   e.scd = sec.cd; const t = sec.t;
   if (t === 'castle') emit(e, 'I', e.x, e.y, e.a);
   else if (t === 'well') emit(e, 'H', e.x, e.y, e.a);
-  else if (t === 'stun' || t === 'fire') { const d = clamp(dist || 180, 60, 260); emit(e, t === 'stun' ? 'U' : 'P', e.x, e.y, a, e.x + Math.cos(a) * d, e.y + Math.sin(a) * d); }
+  else if (LOBS[t]) { const d = clamp(dist || 180, 60, t === 'jars' ? HERO.bracken.range : 260); emit(e, LOBS[t], e.x, e.y, a, e.x + Math.cos(a) * d, e.y + Math.sin(a) * d); }
+  else if (t === 'triple') emit(e, 'J', e.x + Math.cos(a) * 18, e.y - 10 + Math.sin(a) * 18, a);
   else if (t === 'knives') emit(e, 'N', e.x, e.y - 12, a);
   else if (t === 'tonic') { e.haste = 3; glowAt(GL.acid, e.x, e.y - 24, 60, .4); shards(e.x, e.y - 20, ['#8fe36a', '#d6ff9a'], 8, 150); sfx('go'); }
   else { const roll = false, v = 1000; e.kx += Math.cos(a) * v; e.ky += Math.sin(a) * v; e.inv = Math.max(e.inv, roll ? .24 : .28); e.a = a; e.aimT = .35; e.face = Math.cos(a) >= 0 ? 1 : -1; e.rv = Math.max(e.rv, .6);
@@ -872,7 +877,7 @@ function botStep(e, dt) {
     else { const k = d < pref * .7 ? -1 : d > pref ? .6 : 0; mx = -dy / d * ai.strafe + dx / d * k; my = dx / d * ai.strafe + dy / d * k; }
     if (d < h.range * .93 && ai.aimT <= 0 && e.ammo >= 1 && e.cd <= 0) { const lead = d / h.psp * .6; attack(e, Math.atan2(dy + tg.vy * lead, dx + tg.vx * lead) + rand(-.14, .14), h.lob ? d + rand(-25, 25) : undefined); ai.aimT = rand(.3, .8); }
     if (e.sup >= 1 && d < h.srange * .95) superCast(e, Math.atan2(dy, dx), d);
-    if (h.sec && (e.scd || 0) <= 0) { const t = h.sec.t, ta = Math.atan2(dy, dx); if (t === 'dash' ? d > h.range * .9 && d < 300 : t === 'well' ? e.hp < h.hp * .6 : t === 'stun' || t === 'fire' ? d < 250 && d > 70 : t === 'knives' ? d < 420 : t === 'tonic' ? d < 330 : d < 230 && e.hp < h.hp * .7) secondary(e, ta, d); }
+    if (h.sec && (e.scd || 0) <= 0) { const t = h.sec.t, ta = Math.atan2(dy, dx); if (t === 'dash' ? d > h.range * .9 && d < 300 : LOBS[t] ? d < (t === 'jars' ? 230 : 250) && d > 70 : t === 'triple' ? d < h.range * .9 : t === 'knives' ? d < 480 : false) secondary(e, ta, d); }
   } else step(1);
   const l = Math.hypot(mx, my); return l > 1 ? [mx / l, my / l] : [mx, my];
 }
@@ -931,7 +936,7 @@ function update(dt) {
       const rr = e.r + b.r + 10, dx = e.x - b.x, dy = e.y - 10 - b.y; if (dx * dx + dy * dy > rr * rr) continue;
       const dm = b.far === undefined ? b.dmg : Math.round(b.dmg + (b.far - b.dmg) * clamp(Math.hypot(b.x - b.sx, b.y - b.sy) / b.rng, 0, 1));
       hurt(e, dm, b.owner, b.vx, b.vy, b.knock, b.slowP === undefined || Math.random() < b.slowP ? b.slow : 0); charge(b.owner, dm);
-      if (b.frz && e.mine && e.alive && Math.random() < (e.boss ? .125 : b.frz)) { e.frz = e.boss ? 1 : 1.6; shards(e.x, e.y - 20, ['#bfeaff', '#f4fbff', '#7fb0ff'], 12, 200); text(e, 0); TX[TX.length - 1] && (TX[TX.length - 1].v = 'FROZEN'); }
+      if (b.frz && e.mine && e.alive && Math.random() < (e.boss ? .02 : b.frz)) { e.frz = e.boss ? 1 : 1.6; shards(e.x, e.y - 20, ['#bfeaff', '#f4fbff', '#7fb0ff'], 12, 200); text(e, 0); TX[TX.length - 1] && (TX[TX.length - 1].v = 'FROZEN'); }
       glowAt(b.kind === 1 ? GL.gold : GL.ember, b.x, b.y, 38, .2); glowAt(GL.white, b.x, b.y, 16, .12); shards(b.x, b.y, ['#ffe2b0', '#ff7b39', '#fff'], 7, 190); sfx('hit', b.x, b.y);
       if (b.pierce) (b.hit || (b.hit = new Set())).add(e.id); else { gone = true; break; }
     }
@@ -1115,7 +1120,7 @@ function foeStep(e, dt) { return nearPlayer(e) ? botStep(e, dt) : [0, 0]; }
 function bossStep(e, dt) {
   const tg = nearPlayer(e); if (!tg) return [0, 0];
   const dx = tg.x - e.x, dy = tg.y - e.y, d = Math.hypot(dx, dy) || 1, b = BOSS[e.boss - 1], enr = e.hp < e.mhp * .5, a = Math.atan2(dy, dx);
-  e.bt -= dt * (enr ? 1.45 : 1);
+  e.bt -= dt * (enr ? 1.25 : 1);
   if (e.leap) {
     const L = e.leap; L.t += dt; const k = Math.min(1, L.t / L.dur);
     e.x = e.tx = L.sx + (L.tx - L.sx) * k; e.y = e.ty = L.sy + (L.ty - L.sy) * k; e.inv = .1; e.a = Math.atan2(L.ty - L.sy, L.tx - L.sx); e.aimT = .2;
@@ -1123,9 +1128,9 @@ function bossStep(e, dt) {
     return [0, 0];
   }
   if (e.dash > 0) { e.dash -= dt; return [e.ddx * 2.8, e.ddy * 2.8]; }
-  if (e.bt <= 0) { const p = b.pats[e.pat++ % b.pats.length]; bossAttack(e, p, a, enr, tg); e.bt = 1.6; }
-  if (e.hero === 'ghoul' && d < 150 && e.cd <= 0 && e.ammo >= 1) attack(e, a);
-  else if (e.hero === 'imp' && e.cd <= 0 && e.ammo >= 1 && Math.random() < dt * 2) attack(e, a + rand(-.1, .1));
+  if (e.bt <= 0) { const p = b.pats[e.pat++ % b.pats.length]; bossAttack(e, p, a, enr, tg); e.bt = 2.6; }
+  if (e.hero === 'ghoul' && d < 150 && e.cd <= 0 && e.ammo >= 1) { if (attack(e, a)) e.cd = 1.7; }
+  else if (e.hero === 'imp' && e.cd <= 0 && e.ammo >= 1 && Math.random() < dt * 1.1) { if (attack(e, a + rand(-.1, .1))) e.cd = 1.8; }
   e.a = a; e.aimT = .2; e.face = dx > 0 ? 1 : -1;
   const pref = e.hero === 'imp' ? 270 : 110, k = d > pref ? 1 : d < pref * .6 ? -.7 : 0, sw = Math.sin(NOW * .7 + e.ph) * .5;
   return [dx / d * k - dy / d * sw, dy / d * k + dx / d * sw];
@@ -1383,7 +1388,7 @@ const ash = Array.from({ length: reduced ? 0 : 26 }, () => ({ x: Math.random(), 
 function superBtn() { return { x: W - 176, y: H - 70, r: 34 }; }
 function secBtn() { return touchUI ? { x: W - 60, y: H - 236, r: 28 } : { x: W - 262, y: H - 64, r: 28 }; }
 function doSecondary() { const me = myEnt(); if (!me || !me.alive || app.screen !== 'play' || app.menu) return; const m = sticks.move, mv = Math.hypot(m.x, m.y) > .3; const h = HERO[me.hero], t = nearestFoe(me, 260), td = t ? Math.hypot(t.x - me.x, t.y - me.y) : 150;
-  if (touchUI) { const aimed = h.sec && (h.sec.t === 'stun' || h.sec.t === 'fire' || h.sec.t === 'knives' || h.sec.t === 'tonic'); secondary(me, aimed || !mv ? autoAim(me) : Math.atan2(m.y, m.x), td); }
+  if (touchUI) { const aimed = h.sec && h.sec.t !== 'dash'; secondary(me, aimed || !mv ? autoAim(me) : Math.atan2(m.y, m.x), td); }
   else secondary(me, mouseAngle(me), Math.hypot(cam.x + (mouse.x - W / 2) / zoom - me.x, cam.y + (mouse.y - H / 2) / zoom - me.y)); }
 function render(dt) {
   const play = app.screen === 'play', me = play ? myEnt() : null;
