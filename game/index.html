@@ -1306,7 +1306,7 @@ function aimState(me) {
   const s = sticks.aim, h = HERO[me.hero];
   if (s.id !== null) {
     const mag = Math.hypot(s.x, s.y), dragged = s.max > .28;
-    if (!dragged && !held(s.t0)) return null;
+    if (!held(s.t0)) return null;
     if (dragged && mag < .2) return { kind: s.kind, cancel: true };
     if (dragged) return { kind: s.kind, a: Math.atan2(s.y, s.x), mag };
     if (s.kind === 'atk') return { kind: 'atk', a: autoAim(me), mag: 1, auto: true };
@@ -1521,13 +1521,13 @@ function frame(ts) {
 /* ================= input ================= */
 const sticks = { move: { id: null, sx: 0, sy: 0, x: 0, y: 0 }, aim: { id: null, kind: 'atk', sx: 0, sy: 0, x: 0, y: 0, max: 0 } };
 const keys = {}, mouse = { x: 0, y: 0, down: false, hold: null, t0: 0 };
-const HOLD_MS = 200, held = t0 => performance.now() - t0 >= HOLD_MS;
+const HOLD_MS = 220, held = t0 => performance.now() - t0 >= HOLD_MS;
 let touchUI = matchMedia('(pointer: coarse)').matches;
 function mouseAngle(e) { return Math.atan2(cam.y + (mouse.y - H / 2) / zoom - (e.y - 10), cam.x + (mouse.x - W / 2) / zoom - e.x); }
 function mouseSuper() { const me = myEnt(); if (!me) return; const wx = cam.x + (mouse.x - W / 2) / zoom, wy = cam.y + (mouse.y - H / 2) / zoom; superCast(me, Math.atan2(wy - me.y, wx - me.x), Math.hypot(wx - me.x, wy - me.y)); }
 function releaseAim() {
   const s = sticks.aim, me = myEnt(); s.id = null; if (!me || !me.alive) return;
-  const mag = Math.hypot(s.x, s.y), dragged = s.max > .28, h = HERO[me.hero]; if (dragged && mag < .2) return;
+  const mag = Math.hypot(s.x, s.y), dragged = s.max > .28 && held(s.t0), h = HERO[me.hero]; if (dragged && mag < .2) return;
   if (s.kind === 'atk') attack(me, dragged ? Math.atan2(s.y, s.x) : autoAim(me));
   else if (dragged) superCast(me, Math.atan2(s.y, s.x), mag * h.srange);
   else { const t = nearestFoe(me, h.srange * 1.2); superCast(me, t ? Math.atan2(t.y - me.y, t.x - me.x) : (me.face > 0 ? 0 : Math.PI), t ? Math.hypot(t.x - me.x, t.y - me.y) : h.srange * .6); }
@@ -1634,7 +1634,7 @@ function boot(data) {
 }
 window.claude?.hot?.snapshot?.(() => ({ name: prof.name, hero: prof.hero }));
 if (window.claude?.hot?.ready) window.claude.hot.ready(boot); else boot(window.claude?.hot?.data ?? {});
-window.__hh = { app, cfg, ents, Net, dbg, tally, QS, QW, startQuest, openGate, startRoomQuest, get grid() { return GRID; }, get roster() { return roster; }, get host() { return iAmHost; } };
+window.__hh = { aim: () => { const me = myEnt(); return me ? aimState(me) : null; }, app, cfg, ents, Net, dbg, tally, QS, QW, startQuest, openGate, startRoomQuest, get grid() { return GRID; }, get roster() { return roster; }, get host() { return iAmHost; } };
 })();
 </script>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
