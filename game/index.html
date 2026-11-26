@@ -132,7 +132,7 @@ p{margin:0;line-height:1.4}
     <div id="openWrap" hidden><h3>Open rooms</h3><div class="list" id="openList"></div></div>
     <button class="cta quest" id="questBtn" type="button">Quest · 20 levels</button>
     <button class="ghost" id="practiceBtn" type="button">Practice against bots</button>
-    <p class="note">A quick press fires at the nearest target; press and hold to bring up your range and aim by hand, then release to fire. Touch: left thumb moves, right side attacks (hold and drag to aim), and the Super button works the same way. Keyboard and mouse: WASD to move, left-click to attack, right-click or Space for your super, middle-click or E for your fighter's secondary skill (it has its own round button on touch).</p>
+    <p class="note">A quick press fires at the nearest target; press and hold to bring up your range and aim by hand, then release to fire. Touch: left thumb moves, right side attacks (hold and drag to aim), and the Super button works the same way. Keyboard and mouse: WASD to move, left-click to attack, right-click or Space for your super, middle-click or E for your fighter's secondary skill (it has its own round button on touch). The super and the secondary follow the same rule: quick press to auto-target, hold to see the range and aim.</p>
   </div>
 </section>
 
@@ -1352,6 +1352,19 @@ function entGlow(e) {
   else if (e.hero === 'tatter') lit(GL.gold, e.x + 9 * f * HS, y - 52 * HS, 10, pulse);
   if (e.kick > .55 && (e.hero === 'vesper' || e.hero === 'bram')) { const a = e.a; lit(GL.gold, e.x + 7 * f * HS + Math.cos(a) * 26, y - 24 * HS + Math.sin(a) * 26, e.hero === 'bram' ? 34 : 22, e.kick); }
 }
+const secR = h => { const t = h.sec && h.sec.t; return !t ? 0 : t === 'jars' ? HERO.bracken.range : LOBS[t] ? 260 : t === 'triple' ? h.range : t === 'knives' ? 300 : 180; };
+const SECR = { stun: 95, fire: 100, frost: 150, jars: 62 };
+function secGuide(me, st) {
+  const h = HERO[me.hero], t = h.sec.t, SR = secR(h), ox = me.x, oy = me.y - 10, rdy = (me.scd || 0) <= 0, al = rdy ? 1 : .4;
+  ctx.setLineDash([7, 7]); ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(157,184,255,' + (.5 * al) + ')'; ctx.beginPath(); ctx.arc(ox, oy, SR, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
+  if (st.cancel) { ctx.fillStyle = 'rgba(216,69,75,.25)'; ctx.beginPath(); ctx.arc(ox, oy, 26, 0, TAU); ctx.fill(); return; }
+  const a = st.a; ctx.fillStyle = 'rgba(157,184,255,' + (.24 * al) + ')'; ctx.strokeStyle = 'rgba(190,210,255,' + (.9 * al) + ')';
+  const wedge = (R, sp) => { ctx.beginPath(); ctx.moveTo(ox, oy); ctx.arc(ox, oy, R, a - sp, a + sp); ctx.closePath(); ctx.fill(); ctx.stroke(); };
+  const spot = (an, d, R) => { ctx.beginPath(); ctx.arc(me.x + Math.cos(an) * d, me.y + Math.sin(an) * d, R, 0, TAU); ctx.fill(); ctx.stroke(); };
+  if (LOBS[t]) { const d = clamp(st.mag * SR, 60, SR); if (t === 'jars') for (const o of [-.42, 0, .42]) spot(a + o, d, SECR.jars); else spot(a, d, SECR[t]); }
+  else if (t === 'triple') wedge(SR, .27); else if (t === 'knives') wedge(SR, 1.05); else wedge(SR, .12);
+  if (!rdy) { ctx.fillStyle = '#dfe8ff'; ctx.font = '700 ' + (15 * U) + "px 'Saira Semi Condensed','Arial Narrow',sans-serif"; ctx.textAlign = 'center'; ctx.fillText(Math.ceil(me.scd) + 's', me.x, me.y - 96); }
+}
 function aimState(me) {
   // what the player is aiming right now: { kind, a, mag } or null
   const s = sticks.aim, h = HERO[me.hero];
@@ -1361,14 +1374,16 @@ function aimState(me) {
     if (dragged && mag < .2) return { kind: s.kind, cancel: true };
     if (dragged) return { kind: s.kind, a: Math.atan2(s.y, s.x), mag: s.kind === 'atk' ? Math.max(.25, mag) : mag };
     if (s.kind === 'atk') return { kind: 'atk', a: autoAim(me), mag: 1, auto: true };
+    if (s.kind === 'sec') { const t = nearestFoe(me, 300); return { kind: 'sec', a: autoAim(me), mag: t ? Math.min(1, Math.hypot(t.x - me.x, t.y - me.y) / secR(h)) : .6, auto: true }; }
     const t = nearestFoe(me, h.srange * 1.2);
     return { kind: 'sup', a: t ? Math.atan2(t.y - me.y, t.x - me.x) : (me.face > 0 ? 0 : Math.PI), mag: t ? Math.min(1, Math.hypot(t.x - me.x, t.y - me.y) / h.srange) : .6, auto: true };
   }
-  if (mouse.hold && held(mouse.t0)) { const wx = cam.x + (mouse.x - W / 2) / zoom, wy = cam.y + (mouse.y - H / 2) / zoom; return { kind: mouse.hold, a: mouseAngle(me), mag: Math.min(1, Math.hypot(wx - me.x, wy - me.y) / (mouse.hold === 'atk' ? h.range : h.srange)) }; }
+  if (mouse.hold && held(mouse.t0)) { const wx = cam.x + (mouse.x - W / 2) / zoom, wy = cam.y + (mouse.y - H / 2) / zoom; return { kind: mouse.hold, a: mouseAngle(me), mag: Math.min(1, Math.hypot(wx - me.x, wy - me.y) / (mouse.hold === 'atk' ? h.range : mouse.hold === 'sec' ? (secR(h) || 1) : h.srange)) }; }
   return null;
 }
 function aimGuide(me) {
   const st = aimState(me); if (!st) return;
+  if (st.kind === 'sec') { if (HERO[me.hero].sec) secGuide(me, st); return; }
   const h = HERO[me.hero], sup = st.kind === 'sup', ox = me.x, oy = me.y - 10;
   if (sup && me.sup < 1) return;
   // full reach ring
@@ -1387,8 +1402,10 @@ function aimGuide(me) {
 const ash = Array.from({ length: reduced ? 0 : 26 }, () => ({ x: Math.random(), y: Math.random(), s: rand(1.5, 3.5), v: rand(.02, .05), ph: rand(0, TAU) }));
 function superBtn() { return { x: W - 176, y: H - 70, r: 34 }; }
 function secBtn() { return touchUI ? { x: W - 60, y: H - 236, r: 28 } : { x: W - 262, y: H - 64, r: 28 }; }
-function doSecondary() { const me = myEnt(); if (!me || !me.alive || app.screen !== 'play' || app.menu) return; const m = sticks.move, mv = Math.hypot(m.x, m.y) > .3; const h = HERO[me.hero], t = nearestFoe(me, 260), td = t ? Math.hypot(t.x - me.x, t.y - me.y) : 150;
-  if (touchUI) { const aimed = h.sec && h.sec.t !== 'dash'; secondary(me, aimed || !mv ? autoAim(me) : Math.atan2(m.y, m.x), td); }
+function doSecondary(quick) { const me = myEnt(); if (!me || !me.alive || app.screen !== 'play' || app.menu) return; const h = HERO[me.hero]; if (!h.sec) return;
+  const m = sticks.move, mv = Math.hypot(m.x, m.y) > .3, t = nearestFoe(me, 300), td = t ? Math.hypot(t.x - me.x, t.y - me.y) : 150, dash = h.sec.t === 'dash';
+  if (touchUI) secondary(me, dash && mv ? Math.atan2(m.y, m.x) : autoAim(me), td);
+  else if (quick && t && !dash) secondary(me, Math.atan2(t.y - me.y, t.x - me.x), td);
   else secondary(me, mouseAngle(me), Math.hypot(cam.x + (mouse.x - W / 2) / zoom - me.x, cam.y + (mouse.y - H / 2) / zoom - me.y)); }
 function render(dt) {
   const play = app.screen === 'play', me = play ? myEnt() : null;
@@ -1485,6 +1502,7 @@ function drawControls(me) {
   ring(mx, my, 50, 'rgba(236,227,204,.28)', 2); ctx.fillStyle = 'rgba(236,227,204,.3)'; ctx.beginPath(); ctx.arc(mx + m.x * 50, my + m.y * 50, 22, 0, TAU); ctx.fill();
   const atk = a.id !== null && a.kind === 'atk', ax = atk ? a.sx : W - 88, ay = atk ? a.sy : H - 132;
   ring(ax, ay, 50, 'rgba(255,123,57,.6)', 2.5); ctx.fillStyle = 'rgba(255,123,57,.4)'; ctx.beginPath(); ctx.arc(ax + (atk ? a.x : 0) * 50, ay + (atk ? a.y : 0) * 50, 22, 0, TAU); ctx.fill();
+  if (a.id !== null && a.kind === 'sec') { const q = secBtn(); ctx.fillStyle = 'rgba(157,184,255,.55)'; ctx.beginPath(); ctx.arc(q.x + a.x * 40, q.y + a.y * 40, 14, 0, TAU); ctx.fill(); }
   if (a.id !== null && a.kind === 'sup') { ctx.fillStyle = 'rgba(255,222,150,.5)'; ctx.beginPath(); ctx.arc(sb.x + a.x * 44, sb.y + a.y * 44, 16, 0, TAU); ctx.fill(); }
 }
 
@@ -1591,16 +1609,17 @@ function mouseSuper() { const me = myEnt(); if (!me) return; const wx = cam.x + 
 function releaseAim() {
   const s = sticks.aim, me = myEnt(); s.id = null; if (!me || !me.alive) return;
   const mag = Math.hypot(s.x, s.y), dragged = s.max > .28 && held(s.t0), h = HERO[me.hero]; if (dragged && mag < .2) return;
+  if (s.kind === 'sec') { if (dragged) secondary(me, Math.atan2(s.y, s.x), Math.max(.25, mag) * secR(h)); else doSecondary(true); return; }
   if (s.kind === 'atk') attack(me, dragged ? Math.atan2(s.y, s.x) : autoAim(me), dragged && h.lob ? Math.max(.25, mag) * h.range : undefined);
   else if (dragged) superCast(me, Math.atan2(s.y, s.x), mag * h.srange);
   else { const t = nearestFoe(me, h.srange * 1.2); superCast(me, t ? Math.atan2(t.y - me.y, t.x - me.x) : (me.face > 0 ? 0 : Math.PI), t ? Math.hypot(t.x - me.x, t.y - me.y) : h.srange * .6); }
 }
 cv.addEventListener('pointerdown', e => {
   if (app.screen !== 'play' || app.menu) return; e.preventDefault();
-  if (e.pointerType === 'mouse') { touchUI = false; mouse.x = e.clientX; mouse.y = e.clientY; mouse.t0 = performance.now(); if (e.button === 1) doSecondary(); else if (e.button === 2) mouse.hold = 'sup'; else if (e.button === 0) mouse.hold = 'atk'; return; }
+  if (e.pointerType === 'mouse') { touchUI = false; mouse.x = e.clientX; mouse.y = e.clientY; mouse.t0 = performance.now(); if (e.button === 1) mouse.hold = 'sec'; else if (e.button === 2) mouse.hold = 'sup'; else if (e.button === 0) mouse.hold = 'atk'; return; }
   touchUI = true; try { cv.setPointerCapture(e.pointerId); } catch (_) {}
   const x = e.clientX, y = e.clientY, sb = superBtn(), a = sticks.aim, m = sticks.move;
-  { const me = myEnt(), q = secBtn(); if (me && HERO[me.hero].sec && Math.hypot(x - q.x, y - q.y) < q.r + 12) { doSecondary(); return; } }
+  { const me = myEnt(), q = secBtn(); if (me && HERO[me.hero].sec && Math.hypot(x - q.x, y - q.y) < q.r + 12) { if (a.id === null) Object.assign(a, { id: e.pointerId, kind: 'sec', sx: q.x, sy: q.y, x: 0, y: 0, max: 0, t0: performance.now() }); return; } }
   if (a.id === null && Math.hypot(x - sb.x, y - sb.y) < sb.r + 16) Object.assign(a, { id: e.pointerId, kind: 'sup', sx: sb.x, sy: sb.y, x: 0, y: 0, max: 0, t0: performance.now() });
   else if (x < W * .5 && m.id === null) Object.assign(m, { id: e.pointerId, sx: x, sy: y, x: 0, y: 0 });
   else if (a.id === null) Object.assign(a, { id: e.pointerId, kind: 'atk', sx: x, sy: y, x: 0, y: 0, max: 0, t0: performance.now() });
@@ -1620,11 +1639,12 @@ addEventListener('keydown', e => {
   if (e.target && e.target.tagName === 'INPUT') return;
   if (KM[e.key]) { keys[KM[e.key]] = true; if (app.screen === 'play') e.preventDefault(); }
   else if (e.key === ' ' && app.screen === 'play' && !app.menu) { if (!e.repeat) { mouse.hold = 'sup'; mouse.t0 = performance.now(); } e.preventDefault(); }
-  else if ((e.key === 'e' || e.key === 'E' || e.key === 'Shift') && app.screen === 'play' && !app.menu) { if (!e.repeat) doSecondary(); }
+  else if ((e.key === 'e' || e.key === 'E' || e.key === 'Shift') && app.screen === 'play' && !app.menu) { if (!e.repeat) { mouse.hold = 'sec'; mouse.t0 = performance.now(); } e.preventDefault(); }
   else if (e.key === 'Escape' && app.screen === 'play') toggleMenu(!app.menu);
 });
-addEventListener('keyup', e => { if (KM[e.key]) keys[KM[e.key]] = false; else if (e.key === ' ' && mouse.hold === 'sup') releaseMouse(false); });
+addEventListener('keyup', e => { if (KM[e.key]) keys[KM[e.key]] = false; else if (e.key === ' ' && mouse.hold === 'sup') releaseMouse(false); else if ((e.key === 'e' || e.key === 'E' || e.key === 'Shift') && mouse.hold === 'sec') releaseMouse(false); });
 function releaseMouse(cancel) { const k = mouse.hold; mouse.hold = null; mouse.down = false; const me = myEnt(); if (cancel || !k || !me || !me.alive || app.screen !== 'play' || app.menu) return; const quick = !held(mouse.t0), h = HERO[me.hero];
+  if (k === 'sec') { doSecondary(quick); return; }
   if (k === 'atk') { const auto = quick && nearestFoe(me, h.range * 1.15); attack(me, auto ? autoAim(me) : mouseAngle(me), auto || !h.lob ? undefined : Math.hypot(cam.x + (mouse.x - W / 2) / zoom - me.x, cam.y + (mouse.y - H / 2) / zoom - me.y)); }
   else { const t = quick ? nearestFoe(me, h.srange * 1.2) : null; if (t) superCast(me, Math.atan2(t.y - me.y, t.x - me.x), Math.hypot(t.x - me.x, t.y - me.y)); else mouseSuper(); } }
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; mouse.down = false; mouse.hold = null; });
